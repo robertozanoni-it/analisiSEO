@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Specialist Audit Tool – Dati Reali</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --panel: #111827;
+            --card: #1f2937;
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.2);
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: #374151;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            background-image: radial-gradient(circle at 0% 0%, #1e1b4b 0%, transparent 40%);
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        header {
+            padding: 2rem 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.05em; margin: 0; background: linear-gradient(to right, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            text-align: center;
+            background: rgba(17, 24, 39, 0.7);
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+        }
+
+        .upload-zone:hover { border-color: var(--primary); background: var(--primary-glow); }
+
+        textarea { width: 100%; height: 100px; background: var(--panel); border: 1px solid var(--border); color: #d1d5db; padding: 1rem; font-family: 'Fira Code', monospace; border-radius: 16px; margin-bottom: 1rem; outline: none; resize: none; }
+
+        .toolbar { display: flex; gap: 8px; margin-bottom: 2rem; flex-wrap: wrap; }
+        button { padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; font-size: 11px; text-transform: uppercase; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+        .btn-outline:hover { color: #fff; border-color: var(--primary); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--panel); padding: 1.2rem; border-radius: 16px; border: 1px solid var(--border); }
+        .stat-val { font-size: 1.5rem; font-weight: 800; color: #fff; display: block; }
+        .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+
+        .view { display: none; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        section { margin-bottom: 2rem; }
+        h2 { font-size: 1.1rem; color: #fff; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+        h2::before { content: ""; width: 3px; height: 18px; background: var(--primary); }
+
+        .checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+        .check-card { background: var(--panel); border: 1px solid var(--border); padding: 1rem; border-radius: 14px; display: flex; align-items: flex-start; gap: 12px; }
+        .check-info h4 { margin: 0; color: #fff; font-size: 0.9rem; }
+        .check-info p { margin: 4px 0; color: var(--text-muted); font-size: 0.75rem; }
+        .tag-info { font-size: 0.65rem; color: var(--info); font-family: 'Fira Code', monospace; }
+
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: 800; }
+        .pass { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .fail { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .data-table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 12px; overflow: hidden; font-size: 0.75rem; }
+        .data-table th { text-align: left; padding: 12px; background: var(--card); color: var(--text-muted); }
+        .data-table td { padding: 12px; border-top: 1px solid var(--border); vertical-align: middle; }
+        
+        .code-block { background: #000; padding: 10px; border-radius: 8px; font-family: 'Fira Code', monospace; font-size: 0.75rem; color: #d1d5db; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="brand">
+            <h1>Audit SEO Reale <small style="font-size: 0.5em; color: var(--primary);">Data Driven</small></h1>
+            <p>Analisi tecnica basata esclusivamente sul DOM estratti</p>
+        </div>
+    </header>
+
+    <div id="dropZone" class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <p>Trascina il file <b>HTML</b> o clicca qui</p>
+        <input type="file" id="fileInput" accept=".html,.htm" onchange="handleFileUpload(event)" style="display:none">
+    </div>
+
+    <textarea id="htmlInput" placeholder="Incolla il sorgente HTML della pagina da analizzare..."></textarea>
+    
+    <div class="toolbar">
+        <button class="btn-primary" onclick="runFullAudit()">ANALIZZA DOM</button>
+        <button class="btn-outline" onclick="switchView('dashboard')">RECAP</button>
+        <button class="btn-outline" onclick="switchView('seo')">SEO & SEMANTICA</button>
+        <button class="btn-outline" onclick="switchView('tech')">TECNICO & PERFORMANCE</button>
+        <button class="btn-outline" onclick="switchView('media')">MEDIA & LINK</button>
+    </div>
+
+    <div id="statsRow" class="stats-grid" style="display:none;">
+        <div class="stat-card"><span class="stat-val" id="st-tags">0</span><span class="stat-label">Nodi DOM</span></div>
+        <div class="stat-card"><span class="stat-val" id="st-scripts">0</span><span class="stat-label">File JS</span></div>
+        <div class="stat-card"><span class="stat-val" id="st-styles">0</span><span class="stat-label">File CSS</span></div>
+        <div class="stat-card"><span class="stat-val" id="st-img">0</span><span class="stat-label">Img No Alt</span></div>
+    </div>
+
+    <!-- RECAP VIEW -->
+    <div id="dashboardView" class="view">
+        <section>
+            <h2>Meta Dati Reali</h2>
+            <div id="metaBox" class="code-block"></div>
+        </section>
+        <section>
+            <h2>Struttura Heading (H1-H6)</h2>
+            <div id="headingTree" class="code-block"></div>
+        </section>
+    </div>
+
+    <!-- SEO VIEW -->
+    <div id="seoView" class="view">
+        <div id="seoChecklist" class="checklist-grid"></div>
+    </div>
+
+    <!-- TECH VIEW -->
+    <div id="techView" class="view">
+        <section>
+            <h2>Analisi Tecnica del Codice</h2>
+            <div id="techChecklist" class="checklist-grid"></div>
+        </section>
+    </div>
+
+    <!-- MEDIA VIEW -->
+    <div id="mediaView" class="view">
+        <section>
+            <h2>Analisi Immagini (Alt & Dimensioni)</h2>
+            <table class="data-table" id="imgTable">
+                <thead><tr><th>Preview</th><th>Alt Text</th><th>Dimensioni</th><th>Stato</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+        <section style="margin-top: 2rem;">
+            <h2>Analisi Link & Sicurezza</h2>
+            <table class="data-table" id="linkTable">
+                <thead><tr><th>Testo</th><th>Destinazione</th><th>Target</th><th>Security</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </div>
+</div>
+
+<script>
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => { document.getElementById('htmlInput').value = e.target.result; runFullAudit(); };
+        reader.readAsText(file);
+    }
+
+    function runFullAudit() {
+        const source = document.getElementById('htmlInput').value.trim();
+        if (!source) return;
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(source, 'text/html');
+
+        // Estrazione dati reali dal DOM
+        const allTags = doc.getElementsByTagName('*');
+        const scripts = Array.from(doc.querySelectorAll('script[src]'));
+        const styles = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+        const title = doc.querySelector('title')?.innerText || "NON TROVATO";
+        const metaDesc = doc.querySelector('meta[name="description" i]')?.content || "NON TROVATA";
+        const canonical = doc.querySelector('link[rel="canonical" i]')?.href || "MANCANTE";
+        
+        const headings = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6')).map(h => ({
+            tag: h.tagName,
+            text: h.innerText.trim()
+        }));
+
+        const images = Array.from(doc.querySelectorAll('img')).map(img => ({
+            src: img.getAttribute('src') || "",
+            alt: img.getAttribute('alt'),
+            width: img.getAttribute('width'),
+            height: img.getAttribute('height'),
+            hasAlt: img.hasAttribute('alt') && img.getAttribute('alt') !== ""
+        }));
+
+        const links = Array.from(doc.querySelectorAll('a')).map(a => ({
+            text: a.innerText.trim() || "[Icona/Immagine]",
+            href: a.getAttribute('href') || "#",
+            target: a.getAttribute('target') || "_self",
+            rel: a.getAttribute('rel') || ""
+        }));
+
+        // Aggiornamento Statistiche
+        document.getElementById('statsRow').style.display = 'grid';
+        document.getElementById('st-tags').innerText = allTags.length;
+        document.getElementById('st-scripts').innerText = scripts.length;
+        document.getElementById('st-styles').innerText = styles.length;
+        document.getElementById('st-img').innerText = images.filter(i => !i.hasAlt).length;
+
+        // Rendering Recap
+        document.getElementById('metaBox').innerHTML = `
+TITLE: ${title}
+DESCRIPTION: ${metaDesc}
+CANONICAL: ${canonical}
+LANG: ${doc.documentElement.lang || 'Non definita'}
+        `;
+
+        document.getElementById('headingTree').innerHTML = headings.map(h => 
+            `${h.tag}: ${h.text}`
+        ).join('\n') || "Nessun heading trovato.";
+
+        // Rendering SEO Checklist
+        const seoChecks = [
+            { t: "Presenza H1", s: headings.filter(h => h.tag === 'H1').length === 1, d: `Trovati ${headings.filter(h => h.tag === 'H1').length} tag H1.` },
+            { t: "Meta Description", s: metaDesc !== "NON TROVATA", d: metaDesc.length > 0 ? `Lunghezza: ${metaDesc.length} car.` : "Meta description assente." },
+            { t: "Canonical Link", s: canonical !== "MANCANTE", d: canonical !== "MANCANTE" ? "Configurato correttamente." : "Rischio contenuti duplicati." },
+            { t: "Alt Text Immagini", s: images.filter(i => !i.hasAlt).length === 0, d: `Mancano ${images.filter(i => !i.hasAlt).length} attributi alt.` }
+        ];
+
+        document.getElementById('seoChecklist').innerHTML = seoChecks.map(c => renderCheckCard(c)).join('');
+
+        // Rendering Tech Checklist
+        const techChecks = [
+            { t: "Peso del DOM", s: allTags.length < 1500, d: `Totale nodi: ${allTags.length}. (Elementor alert > 1500)` },
+            { t: "Script Esterni", s: scripts.length < 20, d: `Caricati ${scripts.length} file JavaScript esterni.` },
+            { t: "CSS Esterni", s: styles.length < 15, d: `Caricati ${styles.length} file CSS esterni.` },
+            { t: "Immagini senza dimensioni", s: images.filter(i => !i.width || !i.height).length === 0, d: `${images.filter(i => !i.width || !i.height).length} immagini causano Layout Shift.` }
+        ];
+        document.getElementById('techChecklist').innerHTML = techChecks.map(c => renderCheckCard(c)).join('');
+
+        // Rendering Media Table
+        document.querySelector('#imgTable tbody').innerHTML = images.map(i => `
+            <tr>
+                <td><img src="${i.src}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='"></td>
+                <td style="color:${i.hasAlt?'var(--success)':'var(--danger)'}">${i.alt || '[MANCANTE]'}</td>
+                <td>${i.width && i.height ? i.width+'x'+i.height : '<span style="color:var(--warning)">Non definita</span>'}</td>
+                <td><span class="badge ${i.hasAlt && i.width ? 'pass' : 'fail'}">${i.hasAlt && i.width ? 'OK' : 'FIX'}</span></td>
+            </tr>
+        `).join('');
+
+        // Rendering Link Table
+        document.querySelector('#linkTable tbody').innerHTML = links.map(l => {
+            const isUnsafe = l.target === '_blank' && !l.rel.includes('noopener');
+            return `
+            <tr>
+                <td>${l.text.substring(0,25)}</td>
+                <td style="color:var(--text-muted); font-size:0.65rem;">${l.href.substring(0,40)}</td>
+                <td>${l.target}</td>
+                <td><span class="badge ${isUnsafe ? 'fail' : 'pass'}">${isUnsafe ? 'RISCHIO NOOPENER' : 'SICURO'}</span></td>
+            </tr>
+        `}).join('');
+
+        switchView('dashboard');
+    }
+
+    function renderCheckCard(c) {
+        return `
+            <div class="check-card">
+                <div class="badge ${c.s ? 'pass' : 'fail'}">${c.s ? 'OK' : 'CRITICO'}</div>
+                <div class="check-info">
+                    <h4>${c.t}</h4>
+                    <p>${c.d}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    function switchView(v) {
+        ['dashboardView', 'seoView', 'techView', 'mediaView'].forEach(id => document.getElementById(id).style.display = 'none');
+        document.getElementById(v + 'View').style.display = 'block';
+    }
+</script>
+</body>
+</html>
