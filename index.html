@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEO Specialist Audit Tool – Professional Edition v5.0</title>
+    <title>SEO Specialist Audit Tool – Professional Edition v5.1</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -50,16 +50,36 @@
         .upload-zone {
             border: 2px dashed var(--border);
             border-radius: 16px;
-            padding: 1.5rem;
+            padding: 2rem;
             text-align: center;
             background: rgba(15, 23, 42, 0.6);
             transition: all 0.3s ease;
             margin-bottom: 1rem;
             cursor: pointer;
+            position: relative;
         }
-        .upload-zone:hover { border-color: var(--primary); background: var(--primary-glow); }
+        .upload-zone:hover, .upload-zone.drag-over { 
+            border-color: var(--primary); 
+            background: var(--primary-glow); 
+            transform: scale(1.01);
+        }
+        .upload-zone p { pointer-events: none; margin: 0; color: var(--text-muted); }
 
-        textarea { width: 100%; height: 80px; background: var(--panel); border: 1px solid var(--border); color: #cbd5e1; padding: 1rem; font-family: 'Fira Code', monospace; border-radius: 12px; margin-bottom: 1rem; outline: none; resize: none; font-size: 0.8rem; }
+        textarea { 
+            width: 100%; 
+            height: 120px; 
+            background: var(--panel); 
+            border: 1px solid var(--border); 
+            color: #cbd5e1; 
+            padding: 1rem; 
+            font-family: 'Fira Code', monospace; 
+            border-radius: 12px; 
+            margin-bottom: 1rem; 
+            outline: none; 
+            resize: vertical; /* FIX: Permette ridimensionamento */
+            font-size: 0.8rem; 
+        }
+        textarea:focus { border-color: var(--primary); }
 
         .toolbar { display: flex; gap: 8px; margin-bottom: 2rem; flex-wrap: wrap; }
         button { padding: 10px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; font-size: 10px; text-transform: uppercase; }
@@ -69,7 +89,7 @@
         .btn-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); }
         .btn-danger:hover { background: var(--danger); color: #fff; }
 
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.4); border-radius: 12px; border: 1px solid var(--border); align-items: center; }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.4); border-radius: 12px; border: 1px solid var(--border); align-items: center; flex-wrap: wrap; }
         .filter-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 5px; }
         .filter-btn { padding: 6px 12px; border-radius: 6px; font-size: 0.65rem; border: 1px solid var(--border); background: var(--card); color: var(--text-muted); cursor: pointer; transition: 0.2s; }
         .filter-btn.active[data-filter="all"] { background: var(--primary); color: white; border-color: var(--primary); }
@@ -110,6 +130,12 @@
         .info { background: rgba(56, 189, 248, 0.1); color: var(--info); border-color: rgba(56, 189, 248, 0.3); }
 
         .code-block { background: #020617; padding: 16px; border-radius: 12px; font-family: 'Fira Code', monospace; font-size: 0.75rem; color: #a5b4fc; border: 1px solid var(--border); overflow-x: auto; white-space: pre-wrap; line-height: 1.6; }
+        
+        .data-table-container { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .data-table th { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
+        .data-table td { padding: 12px; border-bottom: 1px solid var(--border); color: #e2e8f0; }
+        .data-table tr:last-child td { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -117,14 +143,14 @@
 <div class="container">
     <header>
         <div class="brand">
-            <h1>WP SEO Auditor <small style="font-size: 0.5em; color: var(--primary); opacity: 0.8;">Expert Suite v5.0</small></h1>
+            <h1>WP SEO Auditor <small style="font-size: 0.5em; color: var(--primary); opacity: 0.8;">Expert Suite v5.1</small></h1>
         </div>
         <div style="font-size: 0.7rem; color: var(--text-muted);">
             Progettato per: Web Designers & SEO Specialists
         </div>
     </header>
 
-    <div id="dropZone" class="upload-zone" onclick="document.getElementById('fileInput').click()">
+    <div id="dropZone" class="upload-zone">
         <p><b>Trascina il sorgente HTML</b> o clicca per caricare un file</p>
         <input type="file" id="fileInput" accept=".html,.htm" style="display:none">
     </div>
@@ -208,6 +234,8 @@
         document.getElementById('htmlInput').value = '';
         document.getElementById('statsRow').style.display = 'none';
         document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+        document.getElementById('wpProChecklist').innerHTML = '';
+        document.getElementById('fileInput').value = ''; // Reset file input
     };
 
     function filterChecklist(status) {
@@ -226,9 +254,23 @@
         });
     }
 
+    // Funzione centralizzata per processare il file
+    function processFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            document.getElementById('htmlInput').value = ev.target.result;
+            window.runFullAudit();
+        };
+        reader.readAsText(file);
+    }
+
     window.runFullAudit = function() {
         const source = document.getElementById('htmlInput').value.trim();
-        if (!source) return;
+        if (!source) {
+            alert("Per favore incolla il codice HTML o carica un file.");
+            return;
+        }
 
         const parser = new DOMParser();
         const doc = parser.parseFromString(source, 'text/html');
@@ -289,7 +331,7 @@
             { t: "Staging/Production Split", s: 'info', d: "Sicurezza dello sviluppo.", r: "Non testare modifiche SEO pesanti sul sito live. Usa un ambiente di staging (es. LocalWP o sottodominio)." },
             { t: "Naming Convention Layout", s: 'info', d: "Organizzazione interna.", r: "Rinomina i template di Elementor in modo logico (es. 'Header - Main Site') per facilitare la manutenzione futura." },
             { t: "Custom Post Types (CPT)", s: 'info', d: "Strutturazione dati complessi.", r: "Se gestisci 'Servizi' o 'Portfolio', usa i CPT per separare i contenuti dal blog e avere una struttura URL dedicata." },
-            { t: "Tassonomie CPT", s: 'info', d: "Organizzazione archivi CPT.", r: "Crea categorie personalizzate per i tuoi CPT per aiutare i crawler a capire la pertinenza dei contenuti." },
+            { t: "Tassonomie CPT", s: 'info', d: "Organizzazione archivi CPT.", r: "Crea categorie personalizzate per i CPT per aiutare i crawler a capire la pertinenza dei contenuti." },
             { t: "Membership/LMS SEO", s: 'info', d: "SEO per aree protette.", r: "Se vendi corsi, rendi i titoli delle lezioni e le descrizioni brevi pubbliche per attirare traffico organico." },
             { t: "Gestione Redirect Migrazioni", s: 'info', d: "Preservazione ranking.", r: "Prima di cambiare dominio o struttura URL, prepara un file CSV con tutti i vecchi e nuovi URL per l'importazione in Rank Math." },
             { t: "Editor Performance", s: isElementor ? 'warning' : 'pass', d: "Velocità dell'interfaccia.", r: "Se Elementor è lento, aumenta il 'Memory Limit' di WordPress a 512M nel file wp-config.php." },
@@ -302,6 +344,17 @@
             { t: "Branding & Favicon", s: !!doc.querySelector('link[rel*="icon"]') ? 'pass' : 'fail', d: "Riconoscibilità nei tab.", r: "Carica il Site Icon in Aspetto > Personalizza > Denominazione del sito (dimensione consigliata 512x512px)." },
             { t: "Documentazione Checklist", s: 'info', d: "Reporting per il cliente.", r: "Salva i risultati di questo audit in un PDF da allegare alla fattura o al report mensile per dimostrare il valore del tuo lavoro SEO." }
         ];
+
+        // FIX: CALCOLO SCORE SALUTE
+        let passCount = points.filter(p => p.s === 'pass').length;
+        let totalCount = points.length; // o potremmo escludere 'info' se vuoi un punteggio strict
+        let scorePercent = Math.round((passCount / totalCount) * 100);
+        
+        // Colore score
+        const healthEl = document.getElementById('st-health');
+        healthEl.innerText = scorePercent + "%";
+        healthEl.style.color = scorePercent > 80 ? 'var(--success)' : (scorePercent > 50 ? 'var(--warning)' : 'var(--danger)');
+
 
         document.getElementById('wpProChecklist').innerHTML = points.map((p, i) => `
             <div class="check-card" data-status="${p.s}">
@@ -339,24 +392,46 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
         const btnAudit = document.getElementById('btnAudit');
         
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => filterChecklist(btn.getAttribute('data-filter')));
         });
 
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    document.getElementById('htmlInput').value = ev.target.result;
-                    window.runFullAudit();
-                };
-                reader.readAsText(file);
+        // FIX: DRAG AND DROP EVENTS
+        if (dropZone) {
+            // Click to upload (esistente, ma migliorato)
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            // Drag Over (prevent default per permettere il drop)
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+
+            // Drag Leave (rimuovi stile)
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+
+            // Drop (leggi file)
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
             });
         }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                processFile(e.target.files[0]);
+            });
+        }
+        
         if (btnAudit) btnAudit.addEventListener('click', window.runFullAudit);
     });
 </script>
