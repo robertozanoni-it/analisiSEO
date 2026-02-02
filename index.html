@@ -1,388 +1,577 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SEO Specialist Audit Tool – Professional Edition v5.2</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SEO Audit Pro - Edizione Professionale Completa</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              slate: { 850: '#15202e', 950: '#020617' },
+              primary: { DEFAULT: '#6366f1', hover: '#4f46e5', glow: 'rgba(99, 102, 241, 0.15)' }
+            },
+            fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Fira Code', 'monospace'] },
+          },
+        },
+      }
+    </script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Scripts (UMD) - Stabilizzati -->
+    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
-        :root {
-            --bg: #020617;
-            --panel: #0f172a;
-            --card: #1e293b;
-            --primary: #818cf8;
-            --primary-glow: rgba(129, 140, 248, 0.2);
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #38bdf8;
-        }
-
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            background-image: radial-gradient(circle at 0% 0%, #1e1b4b 0%, transparent 40%);
-            min-height: 100vh;
-        }
-
-        .container { max-width: 1500px; margin: 0 auto; }
-
-        header {
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .brand h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.05em; margin: 0; background: linear-gradient(to right, #fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        .upload-zone {
-            border: 2px dashed var(--border);
-            border-radius: 16px;
-            padding: 2rem;
-            text-align: center;
-            background: rgba(15, 23, 42, 0.6);
-            transition: all 0.3s ease;
-            margin-bottom: 1rem;
-            cursor: pointer;
-            position: relative;
-        }
-        .upload-zone:hover, .upload-zone.drag-over { 
-            border-color: var(--primary); 
-            background: var(--primary-glow); 
-            transform: scale(1.005);
-        }
-        .upload-zone p { pointer-events: none; margin: 0; color: var(--text-muted); }
-
-        textarea { 
-            width: 100%; 
-            height: 120px; 
-            background: var(--panel); 
-            border: 1px solid var(--border); 
-            color: #cbd5e1; 
-            padding: 1rem; 
-            font-family: 'Fira Code', monospace; 
-            border-radius: 12px; 
-            margin-bottom: 1rem; 
-            outline: none; 
-            resize: vertical;
-            font-size: 0.8rem; 
-        }
-        textarea:focus { border-color: var(--primary); }
-
-        .toolbar { display: flex; gap: 8px; margin-bottom: 2rem; flex-wrap: wrap; }
-        button { padding: 10px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; font-size: 10px; text-transform: uppercase; }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
-        .btn-outline:hover { color: #fff; border-color: var(--primary); background: rgba(255,255,255,0.05); }
-        .btn-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: #fff; }
-
-        .filter-bar { display: flex; gap: 10px; margin-bottom: 1.5rem; padding: 1rem; background: rgba(15, 23, 42, 0.4); border-radius: 12px; border: 1px solid var(--border); align-items: center; flex-wrap: wrap; }
-        .filter-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-right: 5px; }
-        .filter-btn { padding: 6px 12px; border-radius: 6px; font-size: 0.65rem; border: 1px solid var(--border); background: var(--card); color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-        
-        /* Filter Styles */
-        .filter-btn.active[data-filter="all"] { background: var(--primary); color: white; border-color: var(--primary); }
-        .filter-btn.active[data-filter="pass"] { background: var(--success); color: white; border-color: var(--success); }
-        .filter-btn.active[data-filter="warning"] { background: var(--warning); color: white; border-color: var(--warning); }
-        .filter-btn.active[data-filter="fail"] { background: var(--danger); color: white; border-color: var(--danger); }
-        .filter-btn.active[data-filter="info"] { background: var(--info); color: white; border-color: var(--info); }
-
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-        .stat-card { background: var(--panel); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--border); position: relative; overflow: hidden; }
-        .stat-val { font-size: 1.6rem; font-weight: 800; color: #fff; display: block; }
-        .stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-
-        .view { display: none; animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        section { margin-bottom: 2.5rem; }
-        h2 { font-size: 0.9rem; color: #fff; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.1em;}
-        h2::before { content: ""; width: 4px; height: 18px; background: var(--primary); border-radius: 2px; }
-
-        .checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 1.2rem; }
-        .check-card { background: var(--panel); border: 1px solid var(--border); padding: 1.2rem; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; transition: all 0.3s; position: relative; }
-        .check-card:hover { transform: translateY(-4px); border-color: var(--primary); }
-        .check-card.hidden { display: none; }
-        
-        .card-header { display: flex; align-items: flex-start; gap: 14px; }
-        .check-info h4 { margin: 0; color: #f8fafc; font-size: 0.9rem; line-height: 1.2; margin-bottom: 4px; }
-        .check-info p { margin: 0; color: var(--text-muted); font-size: 0.75rem; line-height: 1.4; }
-
-        .action-box { margin-top: 8px; padding: 10px; background: rgba(2, 6, 23, 0.5); border-left: 3px solid var(--primary); border-radius: 4px; }
-        .action-box strong { display: block; font-size: 0.65rem; text-transform: uppercase; color: var(--primary); margin-bottom: 4px; letter-spacing: 0.05em; }
-        .action-box span { font-size: 0.72rem; color: #cbd5e1; line-height: 1.4; display: block; }
-
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.6rem; font-weight: 800; flex-shrink: 0; text-align: center; min-width: 65px; border: 1px solid transparent;}
-        .pass { background: rgba(34, 197, 94, 0.1); color: var(--success); border-color: rgba(34, 197, 94, 0.3); }
-        .fail { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
-        .warning { background: rgba(245, 158, 11, 0.1); color: var(--warning); border-color: rgba(245, 158, 11, 0.3); }
-        .info { background: rgba(56, 189, 248, 0.1); color: var(--info); border-color: rgba(56, 189, 248, 0.3); }
-
-        .code-block { background: #020617; padding: 16px; border-radius: 12px; font-family: 'Fira Code', monospace; font-size: 0.75rem; color: #a5b4fc; border: 1px solid var(--border); overflow-x: auto; white-space: pre-wrap; line-height: 1.6; }
-        
-        .data-table-container { overflow-x: auto; }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-        .data-table th { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
-        .data-table td { padding: 12px; border-bottom: 1px solid var(--border); color: #e2e8f0; }
+      body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: #1e293b; }
+      ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+      .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+      @media print {
+        body { background: white !important; color: black !important; }
+        .no-print { display: none !important; }
+        header { position: static !important; background: white !important; border-bottom: 2px solid black !important; }
+        .bg-slate-900, .bg-slate-950, .bg-indigo-600, .bg-indigo-600\/10 { background: transparent !important; color: black !important; border: 1px solid #ccc !important; }
+        .text-white, .text-slate-400, .text-indigo-400 { color: black !important; }
+        .shadow-2xl, .shadow-lg, .shadow-xl { shadow: none !important; }
+        button { display: none !important; }
+      }
     </style>
 </head>
 <body>
+    <div id="root"></div>
 
-<div class="container">
-    <header>
-        <div class="brand">
-            <h1>WP SEO Auditor <small style="font-size: 0.5em; color: var(--primary); opacity: 0.8;">Expert Suite v5.2</small></h1>
-        </div>
-        <div style="font-size: 0.7rem; color: var(--text-muted);">
-            Progettato per: Web Designers & SEO Specialists
-        </div>
-    </header>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback, useRef } = React;
+        const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip: RechartsTooltip } = Recharts;
 
-    <div id="dropZone" class="upload-zone">
-        <p><b>Trascina il sorgente HTML</b> o clicca per caricare un file</p>
-        <input type="file" id="fileInput" accept=".html,.htm" style="display:none">
-    </div>
-
-    <textarea id="htmlInput" placeholder="Incolla il codice HTML (CTRL+U del sito)..."></textarea>
-    
-    <div class="toolbar">
-        <button id="btnAudit" class="btn-primary">ESEGUI AUDIT TOTALE</button>
-        <button class="btn-outline" onclick="switchView('dashboard')">RECAP DASHBOARD</button>
-        <button class="btn-outline" onclick="switchView('wp-pro')">WP CHECKLIST PRO</button>
-        <button class="btn-outline" onclick="switchView('seo')">ARCHITETTURA & TAG</button>
-        <button class="btn-outline" onclick="switchView('links')">MEDIA & LINK</button>
-        <button class="btn-danger" style="margin-left: auto;" onclick="resetTest()">PULISCI / NUOVO TEST</button>
-    </div>
-
-    <div id="statsRow" class="stats-grid" style="display:none;">
-        <div class="stat-card"><span class="stat-val" id="st-tags">0</span><span class="stat-label">Elementi DOM</span></div>
-        <div class="stat-card"><span class="stat-val" id="st-lang">-</span><span class="stat-label">Lingua Rilevata</span></div>
-        <div class="stat-card"><span class="stat-val" id="st-cms">-</span><span class="stat-label">Core Engine</span></div>
-        <div class="stat-card"><span class="stat-val" id="st-health">-%</span><span class="stat-label">SEO Health Score</span></div>
-    </div>
-
-    <div id="dashboardView" class="view">
-        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem;">
-            <section>
-                <h2>Snippet Preview (Meta)</h2>
-                <div id="metaBox" class="code-block"></div>
-            </section>
-            <section>
-                <h2>Infrastruttura Server & Crawler</h2>
-                <div id="serverBox" class="code-block"></div>
-            </section>
-        </div>
-    </div>
-
-    <div id="wp-proView" class="view">
-        <section>
-            <h2>WP Professional Setup & Advanced Strategy</h2>
-            <div class="filter-bar">
-                <span class="filter-label">Filtra Risultati:</span>
-                <button class="filter-btn active" data-filter="all">TUTTI</button>
-                <button class="filter-btn" data-filter="pass">PASS</button>
-                <button class="filter-btn" data-filter="fail">FAIL</button>
-                <button class="filter-btn" data-filter="warning">WARNING</button>
-                <button class="filter-btn" data-filter="info">INFO</button>
-            </div>
-            <div id="wpProChecklist" class="checklist-grid"></div>
-        </section>
-    </div>
-
-    <div id="seoView" class="view">
-        <section>
-            <h2>Gerarchia Intestazioni (H1-H6)</h2>
-            <div id="headingTree" class="code-block"></div>
-        </section>
-    </div>
-
-    <div id="linksView" class="view">
-        <section>
-            <h2>Tabella Link (Interni vs Esterni)</h2>
-            <div class="data-table-container">
-                <table class="data-table" id="linkTable">
-                    <thead><tr><th>Testo Ancora</th><th>URL</th><th>Stato</th><th>Rel</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </section>
-    </div>
-</div>
-
-<script>
-    // Utility per sanitizzare output HTML
-    function escapeHTML(str) {
-        if (!str) return "";
-        return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m]));
-    }
-
-    window.switchView = function(v) {
-        document.querySelectorAll('.view').forEach(view => view.style.display = 'none');
-        const target = document.getElementById(v + 'View');
-        if (target) target.style.display = 'block';
-    };
-
-    window.resetTest = function() {
-        document.getElementById('htmlInput').value = '';
-        document.getElementById('statsRow').style.display = 'none';
-        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-        document.getElementById('wpProChecklist').innerHTML = '';
-        document.getElementById('fileInput').value = ''; 
-    };
-
-    function filterChecklist(status) {
-        const cards = document.querySelectorAll('.check-card');
-        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-        const activeBtn = document.querySelector(`.filter-btn[data-filter="${status}"]`);
-        if (activeBtn) activeBtn.classList.add('active');
-
-        cards.forEach(card => {
-            if (status === 'all' || card.getAttribute('data-status') === status) {
-                card.classList.remove('hidden');
-            } else {
-                card.classList.add('hidden');
-            }
-        });
-    }
-
-    function processFile(file) {
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            document.getElementById('htmlInput').value = ev.target.result;
-            window.runFullAudit();
+        // --- Custom Icons (Stable SVG Paths) ---
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const icons = {
+                shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+                zap: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+                brain: "M9.5 2A5 5 0 0 1 12 4a5 5 0 0 1 2.5-2 5 5 0 0 1 0 10 5 5 0 0 1-5 0 5 5 0 0 1 0-10z M12 14v8 M7 18h10",
+                activity: "M22 12h-4l-3 9L9 3l-3 9H2",
+                check: "M20 6L9 17l-5-5",
+                alert: "M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01",
+                layers: "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5",
+                globe: "M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1 -4 10 15.3 15.3 0 0 1 -4 -10 15.3 15.3 0 0 1 4 -10",
+                file: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6",
+                image: "M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M21 15l-5-5L5 21",
+                link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+                search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35",
+                reset: "M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15",
+                list: "M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01",
+                copy: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M9 2h6v4H9z",
+                print: "M6 9V2h12v7 M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2 M6 14h12v8H6z"
+            };
+            return (
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    <path d={icons[name] || ""} />
+                </svg>
+            );
         };
-        reader.readAsText(file);
-    }
 
-    window.runFullAudit = function() {
-        const source = document.getElementById('htmlInput').value.trim();
-        if (!source) {
-            alert("Per favore incolla il codice HTML o carica un file.");
-            return;
-        }
+        // ==========================================
+        // ANALYSIS ENGINE (RESTORED & EXPANDED)
+        // ==========================================
 
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(source, 'text/html');
-        document.getElementById('statsRow').style.display = 'grid';
+        /**
+         * Analyzes a given HTML string and returns an SEO audit object.
+         * @param {string} htmlString - The HTML source code to analyze.
+         * @returns {Object} The audit results including score, checklist, and metadata.
+         */
+        const analyzeHTML = (htmlString) => {
+          try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, 'text/html');
+            if (!doc || doc.getElementsByTagName('parsererror').length > 0) {
+                throw new Error("Errore durante il parsing del codice HTML.");
+            }
+            const checklist = [];
 
-        // Analisi CMS e Plugin
-        const isWP = source.includes('wp-content') || source.includes('wp-includes');
-        const isElementor = source.includes('elementor-') || !!doc.querySelector('.elementor');
-        const isHTTPS = source.includes('https://');
-        const hasHreflang = !!doc.querySelector('link[hreflang]');
-        const hasBreadcrumb = source.toLowerCase().includes('breadcrumb') || !!doc.querySelector('[itemtype*="BreadcrumbList"]');
-        const hasGTM = source.includes('googletagmanager.com/gtm.js');
-        const hasFAQ = source.includes('FAQPage') || source.includes('wp-block-yoast-faq') || source.includes('rank-math-faq');
-        const isRankMath = source.includes('rank-math');
-        const isYoast = source.includes('yoast');
+          const addCheck = (category, condition, passLabel, failLabel, desc, rec, status = null) => {
+            checklist.push({
+              id: Math.random().toString(36).substr(2, 9),
+              category,
+              status: status || (condition ? 'pass' : 'fail'),
+              label: condition ? passLabel : failLabel,
+              description: desc,
+              recommendation: condition ? undefined : rec,
+            });
+          };
 
-        // Aggiorna Stats
-        document.getElementById('st-tags').innerText = doc.getElementsByTagName('*').length;
-        document.getElementById('st-lang').innerText = (doc.documentElement.lang || "Non definita").toUpperCase();
-        document.getElementById('st-cms').innerText = isWP ? (isElementor ? "WP + Elementor" : "WordPress") : "Custom/Altro";
+          // --- 0. EXTRACTION ---
+          const title = doc.title || '';
+          const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+          const canonical = doc.querySelector('link[rel="canonical"]')?.getAttribute('href') || '';
+          const viewport = doc.querySelector('meta[name="viewport"]');
+          const robots = doc.querySelector('meta[name="robots"]')?.getAttribute('content') || '';
+          const lang = doc.documentElement.lang || 'it';
+          
+          const bodyText = doc.body.innerText || doc.body.textContent || '';
+          const words = bodyText.trim().split(/\s+/).filter(w => w.length > 0);
+          const wordCount = words.length;
+          const letterCount = bodyText.replace(/[^a-zA-Zàèéìòù]/g, '').length;
+          const sentenceCount = bodyText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+          const gulpease = wordCount > 0 ? Math.round(89 + (300 * sentenceCount - 10 * letterCount) / wordCount) : 0;
+          const getGulpeaseLabel = (score) => {
+            if (score > 80) return "Molto Facile";
+            if (score > 60) return "Facile";
+            if (score > 40) return "Media";
+            return "Difficile";
+          };
+          const gulpeaseLabel = getGulpeaseLabel(gulpease);
 
-        // Generazione Checklist (Esempio ridotto per brevità, mantieni i tuoi 50 punti qui)
-        const points = [
-            { t: "Protocollo Sicuro", s: isHTTPS ? 'pass' : 'fail', d: "Verifica HTTPS.", r: "Attiva SSL sull'hosting." },
-            { t: "Lingua Sito", s: doc.documentElement.lang ? 'pass' : 'warning', d: "Presenza attributo lang.", r: "Imposta la lingua corretta nel CMS." },
-            { t: "Breadcrumb Schema", s: hasBreadcrumb ? 'pass' : 'warning', d: "Dati strutturati navigazione.", r: "Abilita Breadcrumbs in Rank Math o Elementor." },
-            { t: "Plugin SEO", s: (isRankMath || isYoast) ? 'pass' : 'fail', d: "Rilevamento Tool SEO.", r: "Installa Rank Math per una gestione professionale." },
-            { t: "Meta Title", s: doc.title ? 'pass' : 'fail', d: "Presenza tag Title.", r: "Inserisci un titolo unico tra 50-60 caratteri." },
-            { t: "Meta Description", s: !!doc.querySelector('meta[name="description"]') ? 'pass' : 'fail', d: "Tag Description presente.", r: "Ottimizza la meta descrizione per aumentare il CTR." },
-            { t: "H1 Unico", s: doc.querySelectorAll('h1').length === 1 ? 'pass' : 'fail', d: "Presenza di un solo tag H1.", r: "Assicurati di avere esattamente un H1 per pagina." },
-            { t: "Favicon", s: !!doc.querySelector('link[rel*="icon"]') ? 'pass' : 'fail', d: "Icona del sito.", r: "Carica una favicon in Personalizza > Denominazione sito." }
-        ];
+          const h1s = Array.from(doc.querySelectorAll('h1'));
+          const h2s = Array.from(doc.querySelectorAll('h2'));
+          const images = Array.from(doc.querySelectorAll('img'));
+          const imagesNoAlt = images.filter(img => !img.hasAttribute('alt') || img.getAttribute('alt').trim() === '').length;
+          const links = Array.from(doc.querySelectorAll('a')).map(a => {
+            const href = a.getAttribute('href') || '';
+            const text = a.innerText.trim();
+            let linkStatus = 'ok';
+            let statusLabel = 'Valido';
 
-        // Calcolo Score
-        let passCount = points.filter(p => p.s === 'pass').length;
-        let scorePercent = Math.round((passCount / points.length) * 100);
-        const healthEl = document.getElementById('st-health');
-        healthEl.innerText = scorePercent + "%";
-        healthEl.style.color = scorePercent > 80 ? 'var(--success)' : (scorePercent > 50 ? 'var(--warning)' : 'var(--danger)');
+            if (!href || href === '') {
+                linkStatus = 'broken';
+                statusLabel = 'Rotto (Manca href)';
+            } else if (href === '#' || href.startsWith('javascript:')) {
+                linkStatus = 'warning';
+                statusLabel = 'Sospetto (Placeholder)';
+            } else if (!text && !a.querySelector('img')) {
+                linkStatus = 'warning';
+                statusLabel = 'Avviso (Senza Testo)';
+            } else if (href.includes('localhost') || href.includes('127.0.0.1')) {
+                linkStatus = 'warning';
+                statusLabel = 'Sospetto (Localhost)';
+            }
 
-        // Render Checklist
-        document.getElementById('wpProChecklist').innerHTML = points.map((p, i) => `
-            <div class="check-card" data-status="${p.s}">
-                <div class="card-header">
-                    <div class="badge ${p.s}">${p.s.toUpperCase()}</div>
-                    <div class="check-info">
-                        <h4>${i + 1}. ${escapeHTML(p.t)}</h4>
-                        <p>${escapeHTML(p.d)}</p>
+            return {
+                text: text || '[Senza Testo]',
+                href,
+                type: href.startsWith('http') ? 'external' : 'internal',
+                target: a.getAttribute('target') || '',
+                rel: a.getAttribute('rel') || '',
+                status: linkStatus,
+                statusLabel
+            };
+          });
+
+          const isWP = htmlString.includes('wp-content') || htmlString.includes('wp-includes');
+          const isElementor = htmlString.includes('elementor') || !!doc.querySelector('.elementor');
+          const wpVersion = doc.querySelector('meta[name="generator"]')?.getAttribute('content') || '';
+          const hasSchema = htmlString.includes('application/ld+json');
+          const hasLists = doc.querySelectorAll('ul, ol').length > 0;
+
+          const ogTags = {
+            title: doc.querySelector('meta[property="og:title"]')?.getAttribute('content'),
+            image: doc.querySelector('meta[property="og:image"]')?.getAttribute('content'),
+            desc: doc.querySelector('meta[property="og:description"]')?.getAttribute('content')
+          };
+          const twitterTags = {
+            card: doc.querySelector('meta[name="twitter:card"]')?.getAttribute('content'),
+            title: doc.querySelector('meta[name="twitter:title"]')?.getAttribute('content')
+          };
+
+          // EEAT Signals
+          const hasAuthor = !!doc.querySelector('[rel="author"], .author, .byline, [itemprop="author"]');
+          const hasDate = !!doc.querySelector('time, .date, .published, [itemprop="datePublished"]');
+          const hasAuthorBio = htmlString.toLowerCase().includes('biografia') || htmlString.toLowerCase().includes('esperto') || htmlString.toLowerCase().includes('expert');
+          const hasContactPage = htmlString.toLowerCase().includes('contatti') || htmlString.toLowerCase().includes('contact');
+          const hasAboutPage = htmlString.toLowerCase().includes('chi siamo') || htmlString.toLowerCase().includes('about');
+          const hasPrivacy = htmlString.toLowerCase().includes('privacy policy') || htmlString.toLowerCase().includes('cookie policy');
+          const favicon = doc.querySelector('link[rel*="icon"]');
+          const socialProfiles = links.filter(l => /(facebook|twitter|instagram|linkedin|youtube|tiktok)\.com/.test(l.href));
+
+          // --- 1. TECHNICAL SEO ---
+          addCheck('SEO Tecnico', !!viewport, 'Viewport OK', 'Viewport Mancante', 'Essenziale per garantire che il sito sia mobile-friendly.', 'Inserisci nel <head> il tag: <meta name="viewport" content="width=device-width, initial-scale=1.0">');
+          addCheck('SEO Tecnico', !robots.includes('noindex'), 'Indicizzabile', 'Noindex Rilevato', 'Il tag noindex impedisce ai motori di ricerca di mostrare questa pagina nei risultati.', 'Rimuovi "noindex" dai meta tag robots o dall\'header HTTP.');
+          addCheck('SEO Tecnico', !!canonical, 'Canonical Presente', 'Canonical Mancante', 'Il tag canonical indica ai motori la versione principale di una pagina, evitando problemi di contenuti duplicati.', 'Aggiungi un tag <link rel="canonical" href="..."> che punti all\'URL preferito di questa pagina.');
+          addCheck('SEO Tecnico', !!favicon, 'Favicon Rilevata', 'Favicon Mancante', 'La favicon è importante per il riconoscimento del brand nelle schede del browser e nei risultati di ricerca mobile.', 'Carica un file favicon.ico o .png e linkalo nel <head> con <link rel="icon" ...>.');
+          addCheck('SEO Tecnico', doc.querySelectorAll('script').length < 25, 'Script Ottimizzati', 'Troppi Script', 'Un numero eccessivo di script esterni può aumentare drasticamente il tempo di caricamento e il Total Blocking Time.', 'Riduci il numero di script, utilizza il caricamento asincrono (async/defer) o unifica i file JS dove possibile.', 'warning');
+
+          // --- 2. ON-PAGE SEO ---
+          addCheck('SEO On-Page', title.length >= 30 && title.length <= 65, `Titolo Ottimale (${title.length})`, `Titolo da Rivedere (${title.length})`, 'Il tag title è uno dei fattori on-page più importanti. La lunghezza ideale è tra 30 e 65 caratteri.', 'Riscrivi il tag <title> per essere descrittivo, includere la keyword principale e rientrare nei limiti di lunghezza.');
+          addCheck('SEO On-Page', h1s.length === 1, 'H1 Univoco', `H1 Errati (${h1s.length})`, 'Ogni pagina dovrebbe avere un solo tag H1 che definisce l\'argomento principale.', 'Assicurati di avere esattamente un tag <h1>. Se ne hai zero, aggiungilo; se ne hai più di uno, converti i secondari in H2.');
+          addCheck('SEO On-Page', !!metaDesc, 'Description Presente', 'Description Mancante', 'La meta description non influisce direttamente sul ranking ma è fondamentale per migliorare la percentuale di clic (CTR).', 'Aggiungi un tag <meta name="description" content="..."> con un riassunto accattivante della pagina (max 155-160 caratteri).');
+          addCheck('SEO On-Page', h2s.length > 0, 'Sottotitoli H2 Presenti', 'Mancano Sottotitoli H2', 'I tag H2 aiutano a gerarchizzare il contenuto e permettono ai motori di capire i sotto-argomenti trattati.', 'Dividi il testo in sezioni logiche e usa i tag <h2> per i titoli di queste sezioni.', 'warning');
+
+          // --- 3. QUALITÀ CONTENUTI ---
+          addCheck('Contenuto', wordCount > 400, `Volume Testo OK (${wordCount})`, `Thin Content (${wordCount})`, 'Google tende a favorire contenuti approfonditi. Un testo troppo breve potrebbe essere considerato di scarso valore.', 'Arricchisci la pagina con informazioni utili, dati, esempi o approfondimenti per superare le 400-600 parole.', wordCount < 200 ? 'fail' : 'warning');
+          addCheck('Contenuto', imagesNoAlt === 0, 'Alt Text Immagini OK', `${imagesNoAlt} Immagini senza Alt`, 'L\'attributo Alt è fondamentale per l\'accessibilità e permette ai motori di "leggere" il contenuto delle immagini.', 'Aggiungi l\'attributo alt="..." a tutte le immagini, descrivendo brevemente cosa rappresentano.');
+          addCheck('Contenuto', doc.querySelectorAll('ul, ol').length > 0, 'Elenchi Puntati Rilevati', 'Nessun Elenco Puntato', 'Le liste migliorano la leggibilità e aiutano gli utenti a scansionare rapidamente il contenuto.', 'Cerca di presentare i punti chiave o i vantaggi usando elenchi puntati (<ul>) o numerati (<ol>).', 'warning');
+          addCheck('Contenuto', gulpease > 40, `Leggibilità ${gulpeaseLabel} (${gulpease})`, `Testo Difficile (${gulpease})`, 'L\'indice Gulpease misura la leggibilità del testo per la lingua italiana. Un punteggio basso indica frasi troppo lunghe e complesse.', 'Accorcia le frasi, usa parole più comuni e dividi i paragrafi troppo densi.', gulpease < 40 ? 'warning' : 'pass');
+
+          // --- 4. WORDPRESS & ELEMENTOR ---
+          if (isWP) {
+            addCheck('WordPress', !wpVersion.includes('WordPress'), 'Versione WP Protetta', 'Versione WP Esposta', 'Nascondere la versione aumenta la sicurezza per evitare attacchi mirati.', 'Utilizza un plugin di sicurezza o aggiungi filtri al functions.php per rimuovere il meta generator.');
+            addCheck('WordPress', htmlString.includes('wp-block-'), 'Gutenberg in uso', 'Editor Classico Rilevato', 'I blocchi Gutenberg sono lo standard moderno per prestazioni e SEO.', 'Pianifica la migrazione dei contenuti dall\'Editor Classico ai blocchi Gutenberg.', 'info');
+          }
+          if (isElementor) {
+            addCheck('Elementor', htmlString.includes('e-con-inner'), 'Elementor: Container Flexbox', 'Elementor: Layout Legacy (Sezioni)', 'I nuovi container Flexbox riducono il DOM e migliorano il caricamento.', 'Attiva i "Flexbox Container" negli esperimenti di Elementor e converti le vecchie sezioni.', 'warning');
+            addCheck('Elementor', !htmlString.includes('elementor-motion-effects'), 'No Effetti di Movimento', 'Effetti Movimento Rilevati', 'Gli effetti di entrata e parallasse possono influire sul Cumulative Layout Shift (CLS).', 'Riduci l\'uso di effetti di movimento per migliorare i Core Web Vitals.', 'info');
+          }
+
+          // --- 5. EEAT (Experience, Expertise, Authoritativeness, Trustworthiness) ---
+          addCheck('EEAT', hasAuthor && hasDate, 'Autore e Data Rilevati', 'Mancano riferimenti Autore/Data', 'Mostrare chiaramente chi ha scritto l\'articolo e quando è stato aggiornato aumenta la credibilità.', 'Inserisci un box autore con nome, foto e data di pubblicazione/aggiornamento.');
+          addCheck('EEAT', hasAuthorBio, 'Biografia Autore Presente', 'Biografia Autore Assente', 'Dimostrare l\'expertise dell\'autore è un segnale chiave per l\'algoritmo di Google.', 'Aggiungi una breve biografia che spieghi perché l\'autore è un esperto dell\'argomento.');
+          addCheck('EEAT', hasAboutPage && hasContactPage, 'Chi Siamo & Contatti OK', 'Mancano Info Aziendali (About/Contact)', 'La trasparenza su chi gestisce il sito è fondamentale per il Trust.', 'Crea e linka nel footer le pagine "Chi Siamo" e "Contatti".');
+          addCheck('EEAT', hasPrivacy, 'Privacy & Policy OK', 'Privacy Policy non trovata', 'Essenziale per la conformità legale e per la fiducia degli utenti.', 'Assicurati che i link a Privacy e Cookie Policy siano visibili in ogni pagina (solitamente nel footer).');
+          addCheck('EEAT', socialProfiles.length > 0, 'Profili Social Rilevati', 'Nessun Profilo Social', 'I link ai profili social ufficiali rinforzano l\'identità del brand e l\'authority.', 'Aggiungi icone social che puntano ai tuoi profili ufficiali (LinkedIn, Facebook, etc.).', 'warning');
+
+          // --- 6. AI OPTIMIZATION (GEO/SGE) ---
+          addCheck('AI Optimization', hasSchema, 'Dati Strutturati JSON-LD', 'Schema Markup Assente', 'I dati strutturati aiutano i motori e le AI a comprendere meglio le entità e le relazioni nel contenuto.', 'Implementa il markup Schema.org (es. Article, FAQ, Product) usando JSON-LD.');
+          addCheck('AI Optimization', h2s.length > 3 && hasLists, 'Struttura per Risposte AI', 'Struttura Debole per AI', 'Una struttura granulare con liste e molti sottotitoli favorisce l\'estrazione di snippet da parte delle AI.', 'Riorganizza il contenuto usando più H2/H3 e trasformando paragrafi densi in liste puntate.');
+
+          // --- 7. SOCIAL METADATA ---
+          addCheck('Social', !!ogTags.title, 'Open Graph Title OK', 'OG Title Mancante', 'Ottimizza la condivisione su Facebook/LinkedIn.', 'Aggiungi og:title.');
+          addCheck('Social', !!ogTags.image, 'Open Graph Image OK', 'OG Image Mancante', 'Essenziale per il visual engagement sui social.', 'Aggiungi og:image.');
+          addCheck('Social', !!twitterTags.card, 'Twitter Card OK', 'Twitter Card Mancante', 'Ottimizza la visualizzazione su X/Twitter.', 'Aggiungi twitter:card.');
+
+          // --- 8. LINK SECURITY & QUALITY ---
+          const brokenLinks = links.filter(l => l.status === 'broken');
+          const suspiciousLinks = links.filter(l => l.status === 'warning');
+          const insecureExternalLinks = links.filter(l => l.type === 'external' && l.target === '_blank' && !l.rel.includes('noopener'));
+          
+          addCheck('Sicurezza', insecureExternalLinks.length === 0, 'Link Esterni Sicuri', `${insecureExternalLinks.length} Link Insicuri`, 'I link che si aprono in una nuova scheda senza rel="noopener" possono essere un rischio per la sicurezza e le prestazioni.', 'Aggiungi l\'attributo rel="noopener" (e idealmente noreferrer) a tutti i link esterni con target="_blank".');
+          addCheck('Qualità Link', brokenLinks.length === 0, 'Nessun Link Rotto', `${brokenLinks.length} Link Rotti Rilevati`, 'I link senza destinazione (href vuoto) peggiorano l\'esperienza utente.', 'Rimuovi i tag <a> vuoti o specifica un URL di destinazione valido.', 'fail');
+          addCheck('Qualità Link', suspiciousLinks.length === 0, 'Integrità Link OK', `${suspiciousLinks.length} Link Sospetti/Placeholder`, 'Link che puntano a "#", "javascript:" o localhost non dovrebbero essere presenti in produzione.', 'Sostituisci i placeholder con URL reali o usa tag <button> per funzionalità JavaScript.', 'warning');
+
+          const passed = checklist.filter(c => c.status === 'pass').length;
+          const score = Math.round((passed / checklist.length) * 100);
+
+          let strategic = {
+            issue: score > 85 ? "Sito Altamente Ottimizzato" : (score > 60 ? "Ottimizzazione Media" : "Criticità Strutturali"),
+            decision: score > 85 ? "Mantenimento & Authority Building" : "Revisione On-Page e EEAT",
+            severity: Math.round((100 - score) / 10),
+            action: score > 85 ? "Focus su backlink di qualità e aggiornamento contenuti." : "Sistema i tag mancanti e migliora i segnali di fiducia (EEAT)."
+          };
+
+          return {
+            score,
+            strategic,
+            checklist,
+            counts: { words: wordCount, images: images.length, links: links.length, h1s: h1s.length, h2s: h2s.length, readability: gulpease },
+            meta: { title, description: metaDesc, cms: isWP ? (isElementor ? 'WordPress + Elementor' : 'WordPress') : 'HTML Custom', lang },
+            links: links.slice(0, 50),
+            headings: Array.from(doc.querySelectorAll('h1, h2, h3, h4')).map(h => ({ level: h.tagName[1], text: h.innerText.trim() }))
+          };
+          } catch (error) {
+            console.error(error);
+            return { error: error.message };
+          }
+        };
+
+        // ==========================================
+        // UI COMPONENTS
+        // ==========================================
+
+        /**
+         * Dashboard component showing global score and strategic insights.
+         * @param {Object} props.data - The audit result data.
+         */
+        const Dashboard = ({ data }) => {
+            const chartData = [
+                { name: 'Pass', value: data.checklist.filter(c => c.status === 'pass').length },
+                { name: 'Warn', value: data.checklist.filter(c => c.status === 'warning').length },
+                { name: 'Fail', value: data.checklist.filter(c => c.status === 'fail').length }
+            ];
+            const COLORS = ['#22c55e', '#f59e0b', '#ef4444'];
+
+            return (
+                <div className="space-y-10 animate-fade-in">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="bg-slate-900 border border-white/5 p-10 rounded-[3rem] shadow-2xl flex flex-col items-center">
+                            <div className="text-[10px] font-black uppercase text-slate-600 mb-6 tracking-widest text-center">Salute SEO Globale</div>
+                            <div className="w-full h-40 relative">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={chartData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                            {chartData.map((e, i) => <Cell key={i} fill={COLORS[i]} />)}
+                                        </Pie>
+                                        <RechartsTooltip 
+                                            contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                                            itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex items-center justify-center text-4xl font-black italic">{data.score}%</div>
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-2 bg-gradient-to-br from-indigo-900/20 to-slate-900 border border-indigo-500/20 rounded-[3rem] p-10 flex flex-col md:flex-row gap-10 items-center shadow-2xl">
+                            <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-600/40"><Icon name="brain" size={48} /></div>
+                            <div className="flex-1 space-y-3">
+                                <div className="text-indigo-400 text-xs font-black uppercase tracking-widest">Strategic Intelligence</div>
+                                <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">{data.strategic.issue}</h2>
+                                <p className="text-slate-400 text-lg leading-snug">Consiglio: <span className="text-white font-bold">{data.strategic.action}</span></p>
+                                <div className="pt-2">
+                                     <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                        Gravità: {data.strategic.severity}/10
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        {[
+                            { l: 'Volume Testo', v: `${data.counts.words} parole`, i: 'file' },
+                            { l: 'Indice Gulpease', v: `${data.counts.readability}/100`, i: 'activity' },
+                            { l: 'Asset Multimediali', v: `${data.counts.images} immagini`, i: 'image' },
+                            { l: 'Tech Stack', v: data.meta.cms, i: 'shield' }
+                        ].map((s, idx) => (
+                            <div key={idx} className="bg-slate-900 border border-white/5 p-8 rounded-3xl group hover:border-indigo-500/30 transition-all shadow-lg">
+                                <div className="flex justify-between items-center mb-4 opacity-40 group-hover:opacity-100 transition-opacity">
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{s.l}</span>
+                                    <Icon name={s.i} size={14}/>
+                                </div>
+                                <div className="text-2xl font-black text-white truncate">{s.v}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="bg-white rounded-[3rem] p-12 shadow-2xl border border-slate-200">
+                        <div className="text-slate-400 text-[10px] mb-4 font-bold uppercase tracking-widest flex items-center gap-2">
+                            <Icon name="search" size={14} className="text-slate-300" /> Google Search Preview
+                        </div>
+                        <div className="space-y-1">
+                            <div className="text-slate-500 text-sm font-mono truncate">www.tuosito.it › pagina › {data.meta.lang}</div>
+                            <h3 className="text-[#1a0dab] text-3xl font-medium truncate mb-2 leading-tight">{data.meta.title || 'Manca il Tag Title!'}</h3>
+                            <p className="text-[#4d5156] text-xl leading-relaxed line-clamp-2 max-w-4xl">
+                                {data.meta.description || 'Attenzione: Meta Description assente. Google genererà uno snippet automatico che potrebbe non essere ottimale per il click-through rate.'}
+                            </p>
+                        </div>
                     </div>
                 </div>
-                ${p.s !== 'pass' ? `
-                    <div class="action-box">
-                        <strong>Azione Consigliata:</strong>
-                        <span>${escapeHTML(p.r)}</span>
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
+            );
+        };
 
-        // Recap Dashboard
-        document.getElementById('metaBox').innerText = `TITLE: ${doc.title || "!!! MANCANTE !!!"}\nDESC: ${doc.querySelector('meta[name="description"]')?.content || "!!! MANCANTE !!!"}\nSEO PLUGIN: ${isRankMath ? 'Rank Math' : (isYoast ? 'Yoast' : 'Nessuno')}`;
-        document.getElementById('serverBox').innerText = `SERVER: ${isHTTPS ? 'HTTPS' : 'HTTP (Rischio)'}\nSITEMAP: ${source.includes('sitemap') ? 'Presente nel codice' : 'Non rilevata'}\nCACHE: ${source.includes('wp-rocket') || source.includes('litespeed') ? 'Attiva' : 'Non rilevata'}`;
-
-        // Heading Tree
-        const hs = Array.from(doc.querySelectorAll('h1, h2, h3, h4, h5, h6')).map(h => `${h.tagName}: ${h.innerText.trim()}`).join('\n');
-        document.getElementById('headingTree').innerText = hs || "Nessun tag H rilevato.";
-
-        // Link Table (Top 30)
-        const links = Array.from(doc.querySelectorAll('a')).slice(0, 30).map(a => `
-            <tr>
-                <td>${escapeHTML(a.innerText.trim().slice(0,30)) || '[Icona/Immagine]'}</td>
-                <td>${escapeHTML(a.getAttribute('href')?.slice(0,50)) || '#'}</td>
-                <td><span class="badge info">ANALIZZATO</span></td>
-                <td>${escapeHTML(a.rel) || "-"}</td>
-            </tr>
-        `).join('');
-        document.querySelector('#linkTable tbody').innerHTML = links;
-
-        window.switchView('wp-pro');
-    };
-
-    // Event Listeners
-    document.addEventListener('DOMContentLoaded', () => {
-        const fileInput = document.getElementById('fileInput');
-        const dropZone = document.getElementById('dropZone');
-        const btnAudit = document.getElementById('btnAudit');
-        
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => filterChecklist(btn.getAttribute('data-filter')));
-        });
-
-        if (dropZone) {
-            dropZone.addEventListener('click', () => fileInput.click());
-            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('drag-over');
-                if (e.dataTransfer.files.length > 0) processFile(e.dataTransfer.files[0]);
+        /**
+         * Checklist component showing detailed SEO checks.
+         * @param {Array} props.items - The list of check objects.
+         */
+        const Checklist = ({ items }) => {
+            const [statusFilter, setStatusFilter] = useState('all');
+            const [categoryFilter, setCategoryFilter] = useState('all');
+            
+            const categories = ['all', ...new Set(items.map(i => i.category))];
+            const filtered = items.filter(i => {
+                const matchStatus = statusFilter === 'all' || i.status === statusFilter;
+                const matchCategory = categoryFilter === 'all' || i.category === categoryFilter;
+                return matchStatus && matchCategory;
             });
-        }
 
-        fileInput.addEventListener('change', (e) => {
-            processFile(e.target.files[0]);
-            fileInput.value = ''; // Reset per caricamenti successivi
-        });
-        
-        btnAudit.addEventListener('click', window.runFullAudit);
-    });
-</script>
+            return (
+                <div className="space-y-10 animate-fade-in">
+                    <div className="flex flex-col gap-6 items-center">
+                        <div className="flex flex-wrap gap-3 justify-center">
+                            {[
+                                { id: 'all', label: 'Tutti i Risultati', color: 'bg-indigo-600' },
+                                { id: 'pass', label: 'Superati', color: 'bg-emerald-500' },
+                                { id: 'warning', label: 'Avvisi', color: 'bg-amber-500' },
+                                { id: 'fail', label: 'Falliti', color: 'bg-red-500' }
+                            ].map(s => (
+                                <button 
+                                    key={s.id} 
+                                    onClick={() => setStatusFilter(s.id)} 
+                                    className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl flex items-center gap-3 border ${statusFilter === s.id ? `${s.color} text-white border-transparent scale-105` : 'bg-slate-900 text-slate-500 border-white/5 hover:border-white/10'}`}
+                                >
+                                    <div className={`w-2 h-2 rounded-full ${statusFilter === s.id ? 'bg-white' : s.color}`}></div>
+                                    {s.label}
+                                </button>
+                            ))}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2 justify-center py-4 border-t border-white/5 w-full max-w-2xl">
+                            {categories.map(c => (
+                                <button 
+                                    key={c} 
+                                    onClick={() => setCategoryFilter(c)} 
+                                    className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${categoryFilter === c ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-600 hover:text-slate-400'}`}
+                                >
+                                    {c}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {filtered.map(item => (
+                            <div key={item.id} className="bg-slate-900 border border-white/5 p-8 rounded-[2.5rem] flex items-start gap-6 hover:border-white/10 transition-all shadow-xl group">
+                                <div className={`p-4 rounded-2xl shadow-inner flex-shrink-0 ${item.status === 'pass' ? 'bg-emerald-500/10 text-emerald-500' : (item.status === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500')}`}>
+                                    <Icon name={item.status === 'pass' ? 'check' : 'alert'} size={28}/>
+                                </div>
+                                <div className="space-y-2 flex-1">
+                                    <div className="flex items-center gap-3">
+                                        <h4 className="font-black uppercase italic text-xl text-white leading-tight">{item.label} <span className="text-xs opacity-50">[{item.status}]</span></h4>
+                                        <span className="text-[9px] bg-slate-950 px-2 py-0.5 rounded text-slate-600 uppercase font-black border border-white/5">{item.category}</span>
+                                    </div>
+                                    <p className="text-slate-500 text-lg leading-snug">{item.description}</p>
+                                    {item.recommendation && (
+                                        <div className="mt-6 bg-slate-950 p-5 rounded-2xl border-l-4 border-indigo-600 shadow-inner">
+                                            <div className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-1">Azione Correttiva</div>
+                                            <div className="text-slate-300 text-sm font-medium">{item.recommendation}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [input, setInput] = useState('');
+            const [result, setResult] = useState(null);
+            const [view, setView] = useState('dashboard');
+            const [isDragging, setIsDragging] = useState(false);
+
+            const handleAudit = () => { 
+                if(input.trim()) {
+                    const res = analyzeHTML(input);
+                    if (res.error) {
+                        alert(res.error);
+                    } else {
+                        setResult(res);
+                    }
+                }
+            };
+            const readFile = (f) => {
+                const r = new FileReader();
+                r.onload = (ev) => {
+                    setInput(ev.target.result);
+                    setResult(analyzeHTML(ev.target.result));
+                };
+                r.readAsText(f);
+            };
+            const onDrop = (e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if(f) readFile(f); };
+
+            const copyToClipboard = () => {
+                const text = `SEO AUDIT REPORT\nScore: ${result.score}%\n\nSTRATEGIC INSIGHT:\n${result.strategic.issue}\n${result.strategic.action}\n\nCHECKLIST:\n` + 
+                    result.checklist.map(c => `[${c.status.toUpperCase()}] ${c.label}: ${c.description}${c.recommendation ? ' -> REC: ' + c.recommendation : ''}`).join('\n');
+                navigator.clipboard.writeText(text).then(() => alert('Report copiato negli appunti!'));
+            };
+
+            if (!result) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6 animate-fade-in" onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={onDrop}>
+                        <div className="max-w-4xl w-full space-y-12">
+                            <div className="text-center space-y-6">
+                                <div className="inline-block p-6 bg-indigo-600 rounded-[3rem] shadow-2xl shadow-indigo-600/30 mb-2 animate-pulse"><Icon name="shield" size={56} /></div>
+                                <h1 className="text-7xl font-black tracking-tighter uppercase italic text-white leading-none">SEO <span className="text-indigo-500">AUDIT</span> PRO</h1>
+                                <p className="text-slate-400 text-2xl font-medium">Trascina un file HTML o incolla il codice sorgente.</p>
+                            </div>
+                            <div className={`relative border-2 border-dashed rounded-[4rem] p-4 transition-all duration-500 ${isDragging ? 'border-indigo-500 bg-indigo-500/5' : 'border-white/10 bg-slate-900/50'}`}>
+                                <textarea className="w-full h-96 bg-transparent rounded-[3rem] p-12 font-mono text-sm outline-none text-slate-300 placeholder:text-slate-700 resize-none shadow-inner" placeholder="<!DOCTYPE html>..." value={input} onChange={e => setInput(e.target.value)} />
+                                <div className="absolute bottom-10 right-10 left-10 flex gap-4">
+                                    <button onClick={() => document.getElementById('f-in').click()} className="flex-1 bg-slate-800 hover:bg-slate-700 py-6 rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest transition-all">Carica File</button>
+                                    <button onClick={handleAudit} disabled={!input.trim()} className="flex-[2] bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 py-6 rounded-[1.5rem] font-black uppercase tracking-[0.4em] text-white shadow-2xl transition-all flex items-center justify-center gap-3">
+                                        <Icon name="zap" size={18}/> Esegui Audit Totale
+                                    </button>
+                                    <input id="f-in" type="file" className="hidden" accept=".html" onChange={e => { const f = e.target.files[0]; if(f) readFile(f); }} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen pb-20 animate-fade-in">
+                    <header className="border-b border-white/5 bg-slate-900/50 p-8 sticky top-0 z-50 backdrop-blur-xl">
+                        <div className="container mx-auto flex justify-between items-center max-w-7xl">
+                            <div className="flex items-center gap-4"><Icon name="activity" className="text-indigo-500" size={28}/><span className="font-black italic text-2xl tracking-tighter uppercase leading-none">SEO <span className="text-indigo-500 underline decoration-2 underline-offset-4">PRO</span></span></div>
+                            <div className="flex gap-4 no-print">
+                                <button onClick={() => window.print()} className="text-[10px] font-black uppercase tracking-widest text-slate-400 border border-white/10 px-8 py-4 rounded-full flex items-center gap-3 bg-slate-900 transition-all hover:text-white"><Icon name="print" size={14}/> Stampa PDF</button>
+                                <button onClick={copyToClipboard} className="text-[10px] font-black uppercase tracking-widest text-indigo-400 border border-indigo-500/20 px-8 py-4 rounded-full flex items-center gap-3 bg-indigo-500/5 transition-all hover:bg-indigo-500/10"><Icon name="copy" size={14}/> Copia Report</button>
+                                <button onClick={() => setResult(null)} className="text-[10px] font-black uppercase tracking-widest text-slate-500 border border-white/10 px-8 py-4 rounded-full flex items-center gap-3 bg-slate-900 transition-all hover:text-white"><Icon name="reset" size={14}/> Nuovo Test</button>
+                            </div>
+                        </div>
+                    </header>
+                    <main className="container mx-auto px-6 py-16 max-w-7xl">
+                        <div className="flex flex-wrap gap-3 mb-16 bg-slate-900/50 p-2 rounded-[2rem] border border-white/5 w-fit mx-auto shadow-2xl no-print">
+                            {[
+                                { id: 'dashboard', l: 'Overview', i: 'globe' },
+                                { id: 'checklist', l: 'Audit Checklist', i: 'list' },
+                                { id: 'struttura', l: 'Architettura Tag', i: 'layers' },
+                                { id: 'links', l: 'Analisi Link', i: 'link' }
+                            ].map(t => <button key={t.id} onClick={() => setView(t.id)} className={`px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${view === t.id ? 'bg-indigo-600 text-white shadow-2xl scale-105' : 'text-slate-500 hover:text-white hover:bg-slate-800'}`}>
+                                <Icon name={t.i} size={14}/> {t.l}
+                            </button>)}
+                        </div>
+                        {view === 'dashboard' && <Dashboard data={result} />}
+                        {view === 'checklist' && <Checklist items={result.checklist} />}
+                        {view === 'struttura' && (
+                            <div className="bg-slate-900 border border-white/5 rounded-[4rem] p-16 max-w-5xl mx-auto space-y-12 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1.5 bg-indigo-500/30"></div>
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-4xl font-black italic uppercase tracking-tighter flex items-center gap-6"><Icon name="layers" size={32} className="text-indigo-500" /> Semantica Heading</h3>
+                                    <span className="bg-slate-950 px-4 py-2 rounded-full text-[10px] font-black uppercase text-slate-500 border border-white/5">{result.headings.length} Tag Rilevati</span>
+                                </div>
+                                <div className="space-y-4 relative">
+                                    <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-500/50 via-slate-800 to-transparent"></div>
+                                    {result.headings.map((h, i) => (
+                                        <div key={i} className={`flex items-start gap-4 transition-all group`} style={{ paddingLeft: `${(h.level - 1) * 24}px` }}>
+                                            <div className="relative mt-3">
+                                                <div className="w-12 h-px bg-slate-800 absolute -left-6 top-1/2"></div>
+                                                <span className={`w-10 h-10 flex items-center justify-center rounded-xl text-[10px] font-black border transition-all ${h.level === '1' ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/20' : 'bg-slate-950 text-slate-500 border-white/5 group-hover:border-slate-700'}`}>H{h.level}</span>
+                                            </div>
+                                            <div className={`flex-1 p-5 rounded-2xl transition-all ${h.level === '1' ? 'bg-indigo-600/10 border border-indigo-500/20' : 'bg-slate-950/50 border border-white/5 group-hover:border-white/10'}`}>
+                                                <span className={`${h.level === '1' ? 'text-white font-black text-xl' : 'text-slate-300 font-bold text-base'} leading-tight block`}>{h.text}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {view === 'links' && (
+                            <div className="bg-slate-900 border border-white/5 rounded-[4rem] p-12 shadow-2xl animate-fade-in max-w-6xl mx-auto">
+                                <h3 className="text-3xl font-black italic uppercase mb-10 flex items-center gap-4"><Icon name="link" className="text-indigo-500" size={32} /> Analisi Link (Top 50)</h3>
+                                <div className="overflow-x-auto px-4">
+                                    <table className="w-full text-left text-sm text-slate-400 border-separate border-spacing-y-3">
+                                        <thead><tr className="text-[11px] font-black uppercase text-slate-600 tracking-widest"><th className="px-6 pb-4">Testo</th><th className="px-6 pb-4">Destinazione</th><th className="px-6 pb-4">Stato</th><th className="px-6 pb-4 text-right">Tipo</th></tr></thead>
+                                        <tbody>
+                                            {result.links.map((l, i) => (
+                                                <tr key={i} className="bg-slate-950/50 hover:bg-white/5 transition-colors group">
+                                                    <td className="p-6 rounded-l-[1.5rem] font-bold text-slate-200 border-y border-l border-white/5">{l.text}</td>
+                                                    <td className="p-6 border-y border-white/5 font-mono text-xs opacity-40 group-hover:opacity-100 transition-opacity truncate max-w-xs">{l.href}</td>
+                                                    <td className="p-6 border-y border-white/5">
+                                                        <span className={`flex items-center gap-2 text-[10px] font-bold uppercase ${l.status === 'broken' ? 'text-red-500' : (l.status === 'warning' ? 'text-amber-500' : 'text-emerald-500')}`}>
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${l.status === 'broken' ? 'bg-red-500' : (l.status === 'warning' ? 'bg-amber-500' : 'bg-emerald-500')}`}></div>
+                                                            {l.statusLabel}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-6 rounded-r-[1.5rem] text-right border-y border-r border-white/5">
+                                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${l.type === 'external' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>{l.type}</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
 </body>
 </html>
