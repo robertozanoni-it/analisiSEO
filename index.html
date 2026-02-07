@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SEO Audit Pro - Edizione Professionale Completa</title>
-    
-    <!-- Tailwind CSS -->
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -13,7 +12,7 @@
           extend: {
             colors: {
               slate: { 850: '#15202e', 950: '#020617' },
-              primary: { DEFAULT: '#6366f1', hover: '#4f46e5', glow: 'rgba(99, 102, 241, 0.15)' }
+              primary: { DEFAULT: '#6366f1', hover: '#4f46e5' }
             },
             fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['Fira Code', 'monospace'] },
           },
@@ -21,10 +20,8 @@
       }
     </script>
 
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- Scripts (UMD) - Stabilizzati -->
+
     <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
@@ -32,21 +29,43 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-      body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+      * { box-sizing: border-box; }
+      body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; }
       ::-webkit-scrollbar { width: 8px; height: 8px; }
       ::-webkit-scrollbar-track { background: #1e293b; }
       ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
       ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
-      .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+      .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-      .glass { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+
+      @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.2); } 50% { box-shadow: 0 0 40px rgba(99,102,241,0.4); } }
+      .pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
+
+      @keyframes slideOpen { from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; } to { opacity: 1; max-height: 600px; padding-top: 1rem; padding-bottom: 1.5rem; } }
+      .animate-slide-open { animation: slideOpen 0.35s ease-out forwards; overflow: hidden; }
+
+      .card-hover { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s ease; }
+      .card-hover:hover { transform: translateY(-3px); box-shadow: 0 16px 32px rgba(0,0,0,0.3); }
+
+      .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+      .tooltip-wrap { position: relative; }
+      .tooltip-wrap:hover::after {
+        content: attr(data-tip);
+        position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+        background: #1e293b; color: #e2e8f0; padding: 5px 10px; border-radius: 8px;
+        font-size: 10px; white-space: nowrap; z-index: 200; border: 1px solid rgba(255,255,255,0.1);
+        pointer-events: none;
+      }
+
       @media print {
         body { background: white !important; color: black !important; }
         .no-print { display: none !important; }
         header { position: static !important; background: white !important; border-bottom: 2px solid black !important; }
-        .bg-slate-900, .bg-slate-950, .bg-indigo-600, .bg-indigo-600\/10 { background: transparent !important; color: black !important; border: 1px solid #ccc !important; }
-        .text-white, .text-slate-400, .text-indigo-400 { color: black !important; }
-        .shadow-2xl, .shadow-lg, .shadow-xl { shadow: none !important; }
+        .bg-slate-900, .bg-slate-950, .bg-indigo-600 { background: transparent !important; color: black !important; border: 1px solid #ccc !important; }
+        .text-white, .text-slate-400, .text-indigo-400, .text-slate-500, .text-slate-300 { color: black !important; }
+        .shadow-2xl, .shadow-lg, .shadow-xl { box-shadow: none !important; }
         button { display: none !important; }
       }
     </style>
@@ -55,523 +74,1053 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback, useRef } = React;
-        const { PieChart, Pie, Cell, ResponsiveContainer, Tooltip: RechartsTooltip } = Recharts;
+      const { useState, useEffect, useCallback, useRef } = React;
+      const {
+        PieChart, Pie, Cell, ResponsiveContainer,
+        Tooltip: RechartsTooltip,
+        RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+      } = Recharts;
 
-        // --- Custom Icons (Stable SVG Paths) ---
-        const Icon = ({ name, size = 20, className = "" }) => {
-            const icons = {
-                shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
-                zap: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
-                brain: "M9.5 2A5 5 0 0 1 12 4a5 5 0 0 1 2.5-2 5 5 0 0 1 0 10 5 5 0 0 1-5 0 5 5 0 0 1 0-10z M12 14v8 M7 18h10",
-                activity: "M22 12h-4l-3 9L9 3l-3 9H2",
-                check: "M20 6L9 17l-5-5",
-                alert: "M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01",
-                layers: "M12 2L2 7l10 5 10-5-10-5z M2 17l10 5 10-5 M2 12l10 5 10-5",
-                globe: "M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0 -20 0 M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1 -4 10 15.3 15.3 0 0 1 -4 -10 15.3 15.3 0 0 1 4 -10",
-                file: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6",
-                image: "M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M21 15l-5-5L5 21",
-                link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
-                search: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35",
-                reset: "M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15",
-                list: "M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01",
-                copy: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M9 2h6v4H9z",
-                print: "M6 9V2h12v7 M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2 M6 14h12v8H6z"
-            };
-            return (
-                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                    <path d={icons[name] || ""} />
-                </svg>
-            );
+      /* ============================================
+         ICON COMPONENT – each path is a separate <path>
+         ============================================ */
+      const Icon = ({ name, size = 20, className = "" }) => {
+        const map = {
+          shield:       [["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"]],
+          zap:          [["M13 2L3 14h9l-1 8 10-12h-9l1-8z"]],
+          brain:        [["M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"],["M12 2v20"],["M2 12h20"]],
+          activity:     [["M22 12h-4l-3 9L9 3l-3 9H2"]],
+          check:        [["M20 6L9 17l-5-5"]],
+          alert:        [["M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"],["M12 9v4"],["M12 17h.01"]],
+          layers:       [["M12 2L2 7l10 5 10-5-10-5z"],["M2 17l10 5 10-5"],["M2 12l10 5 10-5"]],
+          globe:        [["M12 2a10 10 0 100 20 10 10 0 000-20z"],["M2 12h20"],["M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10A15.3 15.3 0 0112 2z"]],
+          file:         [["M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"],["M14 2v6h6"]],
+          image:        [["M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2z"],["M8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"],["M21 15l-5-5L5 21"]],
+          link:         [["M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"],["M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"]],
+          search:       [["M11 19a8 8 0 100-16 8 8 0 000 16z"],["M21 21l-4.35-4.35"]],
+          reset:        [["M23 4v6h-6"],["M1 20v-6h6"],["M3.51 9a9 9 0 0114.85-3.36L23 10"],["M1 14l4.64 4.36A9 9 0 0020.49 15"]],
+          list:         [["M8 6h13"],["M8 12h13"],["M8 18h13"],["M3 6h.01"],["M3 12h.01"],["M3 18h.01"]],
+          copy:         [["M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"],["M9 2h6v4H9z"]],
+          print:        [["M6 9V2h12v7"],["M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"],["M6 14h12v8H6z"]],
+          download:     [["M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"],["M7 10l5 5 5-5"],["M12 15V3"]],
+          chevronDown:  [["M6 9l6 6 6-6"]],
+          chevronUp:    [["M18 15l-6-6-6 6"]],
+          star:         [["M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"]],
+          eye:          [["M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"],["M12 9a3 3 0 100 6 3 3 0 000-6z"]],
+          code:         [["M16 18l6-6-6-6"],["M8 6l-6 6 6 6"]],
+          target:       [["M12 2a10 10 0 100 20 10 10 0 000-20z"],["M12 6a6 6 0 100 12 6 6 0 000-12z"],["M12 10a2 2 0 100 4 2 2 0 000-4z"]],
+          barChart:     [["M18 20V10"],["M12 20V4"],["M6 20v-6"]],
+          pieChart:     [["M21.21 15.89A10 10 0 118 2.83"],["M22 12A10 10 0 0012 2v10z"]],
+          lock:         [["M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z"],["M7 11V7a5 5 0 0110 0v4"]],
+          hash:         [["M4 9h16"],["M4 15h16"],["M10 3L8 21"],["M16 3l-2 18"]],
+          info:         [["M12 2a10 10 0 100 20 10 10 0 000-20z"],["M12 16v-4"],["M12 8h.01"]],
+          settings:     [["M12 15a3 3 0 100-6 3 3 0 000 6z"],["M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"]],
         };
+        const paths = map[name] || map.info;
+        return (
+          <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+               strokeLinejoin="round" className={className} aria-hidden="true">
+            {paths.map((segs, i) => segs.map((d, j) => <path key={`${i}-${j}`} d={d} />))}
+          </svg>
+        );
+      };
 
-        // ==========================================
-        // ANALYSIS ENGINE (RESTORED & EXPANDED)
-        // ==========================================
+      /* ============================================
+         ANALYSIS ENGINE
+         ============================================ */
+      const analyzeHTML = (htmlString) => {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlString, 'text/html');
 
-        /**
-         * Analyzes a given HTML string and returns an SEO audit object.
-         * @param {string} htmlString - The HTML source code to analyze.
-         * @returns {Object} The audit results including score, checklist, and metadata.
-         */
-        const analyzeHTML = (htmlString) => {
-          try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlString, 'text/html');
-            if (!doc || doc.getElementsByTagName('parsererror').length > 0) {
-                throw new Error("Errore durante il parsing del codice HTML.");
-            }
-            const checklist = [];
+          const errs = doc.querySelectorAll('parsererror');
+          if (errs.length > 0) throw new Error("HTML non valido.");
 
-          const addCheck = (category, condition, passLabel, failLabel, desc, rec, status = null) => {
+          if (!doc.body) throw new Error("Il documento non contiene un <body>.");
+
+          const checklist = [];
+
+          const addCheck = (category, condition, passLabel, failLabel, desc, rec, forceStatus, priority) => {
+            const p = priority || 'medium';
             checklist.push({
               id: Math.random().toString(36).substr(2, 9),
               category,
-              status: status || (condition ? 'pass' : 'fail'),
+              status: forceStatus || (condition ? 'pass' : 'fail'),
               label: condition ? passLabel : failLabel,
               description: desc,
-              recommendation: condition ? undefined : rec,
+              recommendation: condition ? null : rec,
+              priority: p,
             });
           };
 
-          // --- 0. EXTRACTION ---
+          /* --- extraction --- */
           const title = doc.title || '';
           const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
           const canonical = doc.querySelector('link[rel="canonical"]')?.getAttribute('href') || '';
           const viewport = doc.querySelector('meta[name="viewport"]');
           const robots = doc.querySelector('meta[name="robots"]')?.getAttribute('content') || '';
-          const lang = doc.documentElement.lang || 'it';
-          
-          const bodyText = doc.body.innerText || doc.body.textContent || '';
-          const words = bodyText.trim().split(/\s+/).filter(w => w.length > 0);
+          const lang = doc.documentElement.getAttribute('lang') || '';
+          const charset = doc.querySelector('meta[charset]')?.getAttribute('charset') || '';
+
+          // textContent works with DOMParser (innerText does NOT)
+          const bodyText = (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+          const words = bodyText.split(/\s+/).filter(w => w.length > 0);
           const wordCount = words.length;
-          const letterCount = bodyText.replace(/[^a-zA-Zàèéìòù]/g, '').length;
-          const sentenceCount = bodyText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-          const gulpease = wordCount > 0 ? Math.round(89 + (300 * sentenceCount - 10 * letterCount) / wordCount) : 0;
-          const getGulpeaseLabel = (score) => {
-            if (score > 80) return "Molto Facile";
-            if (score > 60) return "Facile";
-            if (score > 40) return "Media";
-            return "Difficile";
-          };
-          const gulpeaseLabel = getGulpeaseLabel(gulpease);
+          const letterCount = bodyText.replace(/[^a-zA-Zàèéìòùáéíóú]/g, '').length;
+          const sentenceCount = Math.max(1, bodyText.split(/[.!?]+/).filter(s => s.trim().length > 0).length);
+          const paragraphs = doc.querySelectorAll('p').length;
+          const gulpease = wordCount > 0
+            ? Math.min(100, Math.max(0, Math.round(89 + (300 * sentenceCount - 10 * letterCount) / wordCount)))
+            : 0;
+          const gulpeaseLabel = gulpease > 80 ? "Molto Facile" : gulpease > 60 ? "Facile" : gulpease > 40 ? "Media" : "Difficile";
 
           const h1s = Array.from(doc.querySelectorAll('h1'));
           const h2s = Array.from(doc.querySelectorAll('h2'));
+          const h3s = Array.from(doc.querySelectorAll('h3'));
           const images = Array.from(doc.querySelectorAll('img'));
-          const imagesNoAlt = images.filter(img => !img.hasAttribute('alt') || img.getAttribute('alt').trim() === '').length;
+          const imagesNoAlt = images.filter(img => !img.hasAttribute('alt') || img.getAttribute('alt').trim() === '');
+          const imagesNoSize = images.filter(img => !img.hasAttribute('width') || !img.hasAttribute('height'));
+
           const links = Array.from(doc.querySelectorAll('a')).map(a => {
             const href = a.getAttribute('href') || '';
-            const text = a.innerText.trim();
-            let linkStatus = 'ok';
-            let statusLabel = 'Valido';
-
-            if (!href || href === '') {
-                linkStatus = 'broken';
-                statusLabel = 'Rotto (Manca href)';
-            } else if (href === '#' || href.startsWith('javascript:')) {
-                linkStatus = 'warning';
-                statusLabel = 'Sospetto (Placeholder)';
-            } else if (!text && !a.querySelector('img')) {
-                linkStatus = 'warning';
-                statusLabel = 'Avviso (Senza Testo)';
-            } else if (href.includes('localhost') || href.includes('127.0.0.1')) {
-                linkStatus = 'warning';
-                statusLabel = 'Sospetto (Localhost)';
-            }
-
-            return {
-                text: text || '[Senza Testo]',
-                href,
-                type: href.startsWith('http') ? 'external' : 'internal',
-                target: a.getAttribute('target') || '',
-                rel: a.getAttribute('rel') || '',
-                status: linkStatus,
-                statusLabel
-            };
+            const text = (a.textContent || '').trim();
+            let st = 'ok', sl = 'Valido';
+            if (!href) { st = 'broken'; sl = 'Rotto (href vuoto)'; }
+            else if (href === '#' || href.startsWith('javascript:')) { st = 'warning'; sl = 'Placeholder'; }
+            else if (!text && !a.querySelector('img,svg')) { st = 'warning'; sl = 'Senza testo'; }
+            else if (/localhost|127\.0\.0\.1/.test(href)) { st = 'warning'; sl = 'Localhost'; }
+            return { text: text || '[vuoto]', href, type: href.startsWith('http') ? 'external' : 'internal', target: a.getAttribute('target') || '', rel: a.getAttribute('rel') || '', status: st, statusLabel: sl };
           });
 
-          const isWP = htmlString.includes('wp-content') || htmlString.includes('wp-includes');
-          const isElementor = htmlString.includes('elementor') || !!doc.querySelector('.elementor');
+          const scripts = doc.querySelectorAll('script');
+          const stylesheets = doc.querySelectorAll('link[rel="stylesheet"]');
+          const inlineStyles = doc.querySelectorAll('[style]');
+          const iframes = doc.querySelectorAll('iframe');
+
+          const lcHtml = htmlString.toLowerCase();
+          const isWP = lcHtml.includes('wp-content') || lcHtml.includes('wp-includes');
+          const isElementor = lcHtml.includes('elementor');
           const wpVersion = doc.querySelector('meta[name="generator"]')?.getAttribute('content') || '';
-          const hasSchema = htmlString.includes('application/ld+json');
+          const hasSchema = lcHtml.includes('application/ld+json');
+
+          let schemaTypes = [];
+          doc.querySelectorAll('script[type="application/ld+json"]').forEach(s => {
+            try {
+              const d = JSON.parse(s.textContent);
+              if (d['@type']) schemaTypes.push(d['@type']);
+              if (Array.isArray(d['@graph'])) d['@graph'].forEach(g => { if (g['@type']) schemaTypes.push(g['@type']); });
+            } catch (_) { /* skip malformed JSON-LD */ }
+          });
+
           const hasLists = doc.querySelectorAll('ul, ol').length > 0;
 
           const ogTags = {
-            title: doc.querySelector('meta[property="og:title"]')?.getAttribute('content'),
-            image: doc.querySelector('meta[property="og:image"]')?.getAttribute('content'),
-            desc: doc.querySelector('meta[property="og:description"]')?.getAttribute('content')
+            title: doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || '',
+            image: doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || '',
+            desc:  doc.querySelector('meta[property="og:description"]')?.getAttribute('content') || '',
+            url:   doc.querySelector('meta[property="og:url"]')?.getAttribute('content') || '',
+            type:  doc.querySelector('meta[property="og:type"]')?.getAttribute('content') || '',
           };
           const twitterTags = {
-            card: doc.querySelector('meta[name="twitter:card"]')?.getAttribute('content'),
-            title: doc.querySelector('meta[name="twitter:title"]')?.getAttribute('content')
+            card:  doc.querySelector('meta[name="twitter:card"]')?.getAttribute('content') || '',
+            title: doc.querySelector('meta[name="twitter:title"]')?.getAttribute('content') || '',
+            image: doc.querySelector('meta[name="twitter:image"]')?.getAttribute('content') || '',
           };
 
-          // EEAT Signals
-          const hasAuthor = !!doc.querySelector('[rel="author"], .author, .byline, [itemprop="author"]');
-          const hasDate = !!doc.querySelector('time, .date, .published, [itemprop="datePublished"]');
-          const hasAuthorBio = htmlString.toLowerCase().includes('biografia') || htmlString.toLowerCase().includes('esperto') || htmlString.toLowerCase().includes('expert');
-          const hasContactPage = htmlString.toLowerCase().includes('contatti') || htmlString.toLowerCase().includes('contact');
-          const hasAboutPage = htmlString.toLowerCase().includes('chi siamo') || htmlString.toLowerCase().includes('about');
-          const hasPrivacy = htmlString.toLowerCase().includes('privacy policy') || htmlString.toLowerCase().includes('cookie policy');
-          const favicon = doc.querySelector('link[rel*="icon"]');
-          const socialProfiles = links.filter(l => /(facebook|twitter|instagram|linkedin|youtube|tiktok)\.com/.test(l.href));
+          const hasAuthor  = !!doc.querySelector('[rel="author"], .author, .byline, [itemprop="author"]');
+          const hasDate    = !!doc.querySelector('time, .date, .published, [itemprop="datePublished"]');
+          const hasAuthorBio = /\b(biografia|esperto|expert|bio)\b/i.test(htmlString);
+          const hasContact = /\b(contatti|contact)\b/i.test(htmlString);
+          const hasAbout   = /\b(chi siamo|about)\b/i.test(htmlString);
+          const hasPrivacy = /\b(privacy|cookie policy)\b/i.test(htmlString);
+          const favicon    = doc.querySelector('link[rel*="icon"]');
+          const socialProfiles = links.filter(l => /(facebook|twitter|instagram|linkedin|youtube|tiktok|x)\.com/i.test(l.href));
 
-          // --- 1. TECHNICAL SEO ---
-          addCheck('SEO Tecnico', !!viewport, 'Viewport OK', 'Viewport Mancante', 'Essenziale per garantire che il sito sia mobile-friendly.', 'Inserisci nel <head> il tag: <meta name="viewport" content="width=device-width, initial-scale=1.0">');
-          addCheck('SEO Tecnico', !robots.includes('noindex'), 'Indicizzabile', 'Noindex Rilevato', 'Il tag noindex impedisce ai motori di ricerca di mostrare questa pagina nei risultati.', 'Rimuovi "noindex" dai meta tag robots o dall\'header HTTP.');
-          addCheck('SEO Tecnico', !!canonical, 'Canonical Presente', 'Canonical Mancante', 'Il tag canonical indica ai motori la versione principale di una pagina, evitando problemi di contenuti duplicati.', 'Aggiungi un tag <link rel="canonical" href="..."> che punti all\'URL preferito di questa pagina.');
-          addCheck('SEO Tecnico', !!favicon, 'Favicon Rilevata', 'Favicon Mancante', 'La favicon è importante per il riconoscimento del brand nelle schede del browser e nei risultati di ricerca mobile.', 'Carica un file favicon.ico o .png e linkalo nel <head> con <link rel="icon" ...>.');
-          addCheck('SEO Tecnico', doc.querySelectorAll('script').length < 25, 'Script Ottimizzati', 'Troppi Script', 'Un numero eccessivo di script esterni può aumentare drasticamente il tempo di caricamento e il Total Blocking Time.', 'Riduci il numero di script, utilizza il caricamento asincrono (async/defer) o unifica i file JS dove possibile.', 'warning');
+          const hasLazy       = images.some(img => img.getAttribute('loading') === 'lazy');
+          const hasDeferAsync = Array.from(scripts).some(s => s.hasAttribute('defer') || s.hasAttribute('async'));
+          const hasPreconnect = doc.querySelectorAll('link[rel="preconnect"]').length > 0;
+          const hasAriaLandmarks = doc.querySelectorAll('[role="main"],[role="navigation"],main,nav,header,footer').length > 0;
 
-          // --- 2. ON-PAGE SEO ---
-          addCheck('SEO On-Page', title.length >= 30 && title.length <= 65, `Titolo Ottimale (${title.length})`, `Titolo da Rivedere (${title.length})`, 'Il tag title è uno dei fattori on-page più importanti. La lunghezza ideale è tra 30 e 65 caratteri.', 'Riscrivi il tag <title> per essere descrittivo, includere la keyword principale e rientrare nei limiti di lunghezza.');
-          addCheck('SEO On-Page', h1s.length === 1, 'H1 Univoco', `H1 Errati (${h1s.length})`, 'Ogni pagina dovrebbe avere un solo tag H1 che definisce l\'argomento principale.', 'Assicurati di avere esattamente un tag <h1>. Se ne hai zero, aggiungilo; se ne hai più di uno, converti i secondari in H2.');
-          addCheck('SEO On-Page', !!metaDesc, 'Description Presente', 'Description Mancante', 'La meta description non influisce direttamente sul ranking ma è fondamentale per migliorare la percentuale di clic (CTR).', 'Aggiungi un tag <meta name="description" content="..."> con un riassunto accattivante della pagina (max 155-160 caratteri).');
-          addCheck('SEO On-Page', h2s.length > 0, 'Sottotitoli H2 Presenti', 'Mancano Sottotitoli H2', 'I tag H2 aiutano a gerarchizzare il contenuto e permettono ai motori di capire i sotto-argomenti trattati.', 'Dividi il testo in sezioni logiche e usa i tag <h2> per i titoli di queste sezioni.', 'warning');
+          /* --- checks --- */
+          // Technical
+          addCheck('SEO Tecnico', !!viewport, 'Viewport OK', 'Viewport Mancante', 'Essenziale per la versione mobile.', 'Aggiungi <meta name="viewport" content="width=device-width, initial-scale=1.0"> nel <head>.', null, 'critical');
+          addCheck('SEO Tecnico', !robots.includes('noindex'), 'Indicizzabile', 'Noindex Rilevato', 'Il tag noindex impedisce l\'indicizzazione.', 'Rimuovi "noindex" dal meta robots.', null, 'critical');
+          addCheck('SEO Tecnico', !!canonical, 'Canonical Presente', 'Canonical Mancante', 'Evita problemi di contenuti duplicati.', 'Aggiungi <link rel="canonical" href="...">.', null, 'high');
+          addCheck('SEO Tecnico', !!favicon, 'Favicon OK', 'Favicon Mancante', 'Importante per il riconoscimento del brand.', 'Aggiungi <link rel="icon" href="...">.', null, 'low');
+          addCheck('SEO Tecnico', !!lang, 'Attributo Lang OK', 'Lang Mancante', 'Aiuta i motori a capire la lingua.', 'Aggiungi lang="it" al tag <html>.', null, 'high');
+          addCheck('SEO Tecnico', !!charset, 'Charset OK', 'Charset Mancante', 'Assicura la corretta codifica dei caratteri.', 'Aggiungi <meta charset="UTF-8"> nel <head>.', null, 'medium');
+          addCheck('SEO Tecnico', scripts.length < 25, 'Script OK (' + scripts.length + ')', 'Troppi Script (' + scripts.length + ')', 'Troppi script rallentano il caricamento.', 'Riduci gli script, usa async/defer.', scripts.length >= 25 ? 'fail' : (scripts.length >= 15 ? 'warning' : 'pass'), 'medium');
 
-          // --- 3. QUALITÀ CONTENUTI ---
-          addCheck('Contenuto', wordCount > 400, `Volume Testo OK (${wordCount})`, `Thin Content (${wordCount})`, 'Google tende a favorire contenuti approfonditi. Un testo troppo breve potrebbe essere considerato di scarso valore.', 'Arricchisci la pagina con informazioni utili, dati, esempi o approfondimenti per superare le 400-600 parole.', wordCount < 200 ? 'fail' : 'warning');
-          addCheck('Contenuto', imagesNoAlt === 0, 'Alt Text Immagini OK', `${imagesNoAlt} Immagini senza Alt`, 'L\'attributo Alt è fondamentale per l\'accessibilità e permette ai motori di "leggere" il contenuto delle immagini.', 'Aggiungi l\'attributo alt="..." a tutte le immagini, descrivendo brevemente cosa rappresentano.');
-          addCheck('Contenuto', doc.querySelectorAll('ul, ol').length > 0, 'Elenchi Puntati Rilevati', 'Nessun Elenco Puntato', 'Le liste migliorano la leggibilità e aiutano gli utenti a scansionare rapidamente il contenuto.', 'Cerca di presentare i punti chiave o i vantaggi usando elenchi puntati (<ul>) o numerati (<ol>).', 'warning');
-          addCheck('Contenuto', gulpease > 40, `Leggibilità ${gulpeaseLabel} (${gulpease})`, `Testo Difficile (${gulpease})`, 'L\'indice Gulpease misura la leggibilità del testo per la lingua italiana. Un punteggio basso indica frasi troppo lunghe e complesse.', 'Accorcia le frasi, usa parole più comuni e dividi i paragrafi troppo densi.', gulpease < 40 ? 'warning' : 'pass');
+          // On-Page
+          addCheck('SEO On-Page', title.length >= 30 && title.length <= 65, 'Title OK (' + title.length + ' car.)', 'Title da Rivedere (' + title.length + ' car.)', 'Lunghezza ideale: 30–65 caratteri.', 'Riscrivi il tag <title>.', title.length === 0 ? 'fail' : null, 'critical');
+          addCheck('SEO On-Page', h1s.length === 1, 'H1 Univoco', 'H1: ' + h1s.length + ' trovati', 'Ogni pagina deve avere un solo H1.', 'Usa un solo tag <h1>.', null, 'critical');
+          addCheck('SEO On-Page', !!metaDesc, 'Description Presente', 'Description Mancante', 'Migliora il CTR nei risultati.', 'Aggiungi <meta name="description" content="..."> (max 160 car.).', null, 'critical');
+          if (metaDesc) {
+            addCheck('SEO On-Page', metaDesc.length <= 160, 'Description OK (' + metaDesc.length + ' car.)', 'Description Lunga (' + metaDesc.length + ' car.)', 'Massimo 160 caratteri consigliati.', 'Accorcia la meta description.', metaDesc.length > 160 ? 'warning' : 'pass', 'medium');
+          }
+          addCheck('SEO On-Page', h2s.length > 0, 'H2 Presenti (' + h2s.length + ')', 'Nessun H2', 'Gli H2 strutturano il contenuto.', 'Dividi il testo con tag <h2>.', h2s.length === 0 ? 'warning' : 'pass', 'medium');
 
-          // --- 4. WORDPRESS & ELEMENTOR ---
+          // Heading hierarchy
+          const allH = Array.from(doc.querySelectorAll('h1,h2,h3,h4,h5,h6'));
+          let hierOK = true;
+          for (let i = 1; i < allH.length; i++) {
+            if (parseInt(allH[i].tagName[1]) > parseInt(allH[i-1].tagName[1]) + 1) { hierOK = false; break; }
+          }
+          addCheck('SEO On-Page', hierOK, 'Gerarchia Heading OK', 'Gerarchia Heading Errata', 'I tag heading devono seguire un ordine logico.', 'Correggi la sequenza (es. H1→H2→H3, non H1→H3).', null, 'high');
+
+          // Content
+          addCheck('Contenuto', wordCount > 400, 'Testo OK (' + wordCount + ' parole)', 'Thin Content (' + wordCount + ' parole)', 'Google favorisce contenuti approfonditi.', 'Scrivi almeno 400 parole utili.', wordCount < 200 ? 'fail' : 'warning', 'high');
+          addCheck('Contenuto', imagesNoAlt.length === 0, 'Alt Text OK', imagesNoAlt.length + '/' + images.length + ' senza Alt', 'L\'attributo alt è essenziale per SEO e accessibilità.', 'Aggiungi alt descrittivo a ogni immagine.', null, 'high');
+          addCheck('Contenuto', hasLists, 'Elenchi Presenti', 'Nessun Elenco', 'Le liste migliorano la leggibilità.', 'Usa <ul> o <ol> per i punti chiave.', !hasLists ? 'warning' : 'pass', 'low');
+          addCheck('Contenuto', gulpease > 40, 'Leggibilità: ' + gulpeaseLabel + ' (' + gulpease + ')', 'Testo Difficile (' + gulpease + ')', 'Indice Gulpease per la lingua italiana.', 'Accorcia le frasi e usa parole semplici.', gulpease <= 40 ? 'warning' : 'pass', 'medium');
+          addCheck('Contenuto', imagesNoSize.length === 0, 'Dim. Immagini OK', imagesNoSize.length + ' img senza width/height', 'Dichiarare le dimensioni previene il CLS.', 'Aggiungi width e height a ogni <img>.', imagesNoSize.length > 0 ? 'warning' : 'pass', 'medium');
+
+          // Performance
+          addCheck('Performance', hasLazy || images.length === 0, 'Lazy Loading OK', 'Lazy Loading Mancante', 'Ritarda il caricamento immagini non visibili.', 'Aggiungi loading="lazy" alle immagini.', (!hasLazy && images.length > 0) ? 'warning' : 'pass', 'medium');
+          addCheck('Performance', hasDeferAsync || scripts.length === 0, 'Script Non Bloccanti', 'Script Bloccanti', 'Script senza async/defer bloccano il rendering.', 'Aggiungi defer o async agli script.', null, 'high');
+          addCheck('Performance', hasPreconnect, 'Preconnect Presente', 'Preconnect Mancante', 'Velocizza la connessione a domini esterni.', 'Aggiungi <link rel="preconnect" href="...">.', !hasPreconnect ? 'warning' : 'pass', 'low');
+          addCheck('Performance', inlineStyles.length < 20, 'Inline Styles OK (' + inlineStyles.length + ')', 'Troppi Inline Styles (' + inlineStyles.length + ')', 'Gli stili inline appesantiscono l\'HTML.', 'Sposta gli stili in un file CSS.', inlineStyles.length >= 20 ? 'warning' : 'pass', 'low');
+
+          // WordPress / Elementor
           if (isWP) {
-            addCheck('WordPress', !wpVersion.includes('WordPress'), 'Versione WP Protetta', 'Versione WP Esposta', 'Nascondere la versione aumenta la sicurezza per evitare attacchi mirati.', 'Utilizza un plugin di sicurezza o aggiungi filtri al functions.php per rimuovere il meta generator.');
-            addCheck('WordPress', htmlString.includes('wp-block-'), 'Gutenberg in uso', 'Editor Classico Rilevato', 'I blocchi Gutenberg sono lo standard moderno per prestazioni e SEO.', 'Pianifica la migrazione dei contenuti dall\'Editor Classico ai blocchi Gutenberg.', 'info');
+            addCheck('WordPress', !wpVersion.includes('WordPress'), 'Versione WP Protetta', 'Versione WP Esposta', 'Nascondere la versione migliora la sicurezza.', 'Rimuovi il meta generator.', null, 'high');
           }
           if (isElementor) {
-            addCheck('Elementor', htmlString.includes('e-con-inner'), 'Elementor: Container Flexbox', 'Elementor: Layout Legacy (Sezioni)', 'I nuovi container Flexbox riducono il DOM e migliorano il caricamento.', 'Attiva i "Flexbox Container" negli esperimenti di Elementor e converti le vecchie sezioni.', 'warning');
-            addCheck('Elementor', !htmlString.includes('elementor-motion-effects'), 'No Effetti di Movimento', 'Effetti Movimento Rilevati', 'Gli effetti di entrata e parallasse possono influire sul Cumulative Layout Shift (CLS).', 'Riduci l\'uso di effetti di movimento per migliorare i Core Web Vitals.', 'info');
+            addCheck('Elementor', lcHtml.includes('e-con-inner'), 'Container Flexbox', 'Layout Legacy', 'I container Flexbox sono più performanti.', 'Attiva i Flexbox Container in Elementor.', lcHtml.includes('e-con-inner') ? 'pass' : 'warning', 'medium');
           }
 
-          // --- 5. EEAT (Experience, Expertise, Authoritativeness, Trustworthiness) ---
-          addCheck('EEAT', hasAuthor && hasDate, 'Autore e Data Rilevati', 'Mancano riferimenti Autore/Data', 'Mostrare chiaramente chi ha scritto l\'articolo e quando è stato aggiornato aumenta la credibilità.', 'Inserisci un box autore con nome, foto e data di pubblicazione/aggiornamento.');
-          addCheck('EEAT', hasAuthorBio, 'Biografia Autore Presente', 'Biografia Autore Assente', 'Dimostrare l\'expertise dell\'autore è un segnale chiave per l\'algoritmo di Google.', 'Aggiungi una breve biografia che spieghi perché l\'autore è un esperto dell\'argomento.');
-          addCheck('EEAT', hasAboutPage && hasContactPage, 'Chi Siamo & Contatti OK', 'Mancano Info Aziendali (About/Contact)', 'La trasparenza su chi gestisce il sito è fondamentale per il Trust.', 'Crea e linka nel footer le pagine "Chi Siamo" e "Contatti".');
-          addCheck('EEAT', hasPrivacy, 'Privacy & Policy OK', 'Privacy Policy non trovata', 'Essenziale per la conformità legale e per la fiducia degli utenti.', 'Assicurati che i link a Privacy e Cookie Policy siano visibili in ogni pagina (solitamente nel footer).');
-          addCheck('EEAT', socialProfiles.length > 0, 'Profili Social Rilevati', 'Nessun Profilo Social', 'I link ai profili social ufficiali rinforzano l\'identità del brand e l\'authority.', 'Aggiungi icone social che puntano ai tuoi profili ufficiali (LinkedIn, Facebook, etc.).', 'warning');
+          // EEAT
+          addCheck('EEAT', hasAuthor && hasDate, 'Autore & Data OK', 'Mancano Autore/Data', 'Aumentano la credibilità.', 'Inserisci autore e data di pubblicazione.', null, 'high');
+          addCheck('EEAT', hasAuthorBio, 'Biografia Autore OK', 'Biografia Assente', 'L\'expertise dell\'autore è un segnale chiave.', 'Aggiungi una breve bio dell\'autore.', null, 'medium');
+          addCheck('EEAT', hasAbout && hasContact, 'About & Contatti OK', 'Mancano Info Aziendali', 'Trasparenza = fiducia.', 'Crea pagine About e Contatti.', null, 'high');
+          addCheck('EEAT', hasPrivacy, 'Privacy OK', 'Privacy Mancante', 'Obbligatorio per la conformità legale.', 'Linka Privacy e Cookie Policy nel footer.', null, 'high');
+          addCheck('EEAT', socialProfiles.length > 0, 'Social (' + socialProfiles.length + ')', 'Nessun Social', 'I link social rinforzano il brand.', 'Aggiungi link ai profili social ufficiali.', socialProfiles.length === 0 ? 'warning' : 'pass', 'low');
 
-          // --- 6. AI OPTIMIZATION (GEO/SGE) ---
-          addCheck('AI Optimization', hasSchema, 'Dati Strutturati JSON-LD', 'Schema Markup Assente', 'I dati strutturati aiutano i motori e le AI a comprendere meglio le entità e le relazioni nel contenuto.', 'Implementa il markup Schema.org (es. Article, FAQ, Product) usando JSON-LD.');
-          addCheck('AI Optimization', h2s.length > 3 && hasLists, 'Struttura per Risposte AI', 'Struttura Debole per AI', 'Una struttura granulare con liste e molti sottotitoli favorisce l\'estrazione di snippet da parte delle AI.', 'Riorganizza il contenuto usando più H2/H3 e trasformando paragrafi densi in liste puntate.');
+          // AI Optimization
+          addCheck('AI Optimization', hasSchema, schemaTypes.length ? 'Schema: ' + schemaTypes.join(', ') : 'JSON-LD Presente', 'Schema Assente', 'I dati strutturati aiutano motori e AI.', 'Implementa Schema.org in formato JSON-LD.', null, 'high');
+          addCheck('AI Optimization', h2s.length > 3 && hasLists, 'Struttura AI-Ready', 'Struttura Debole per AI', 'Sottotitoli + liste favoriscono gli snippet AI.', 'Usa più H2/H3 e trasforma paragrafi in liste.', null, 'medium');
 
-          // --- 7. SOCIAL METADATA ---
-          addCheck('Social', !!ogTags.title, 'Open Graph Title OK', 'OG Title Mancante', 'Ottimizza la condivisione su Facebook/LinkedIn.', 'Aggiungi og:title.');
-          addCheck('Social', !!ogTags.image, 'Open Graph Image OK', 'OG Image Mancante', 'Essenziale per il visual engagement sui social.', 'Aggiungi og:image.');
-          addCheck('Social', !!twitterTags.card, 'Twitter Card OK', 'Twitter Card Mancante', 'Ottimizza la visualizzazione su X/Twitter.', 'Aggiungi twitter:card.');
+          // Social Meta
+          addCheck('Social', !!ogTags.title, 'OG Title OK', 'OG Title Mancante', 'Per la condivisione su Facebook/LinkedIn.', 'Aggiungi og:title.', null, 'medium');
+          addCheck('Social', !!ogTags.image, 'OG Image OK', 'OG Image Mancante', 'Essenziale per l\'anteprima visuale.', 'Aggiungi og:image.', null, 'medium');
+          addCheck('Social', !!twitterTags.card, 'Twitter Card OK', 'Twitter Card Mancante', 'Per l\'anteprima su X/Twitter.', 'Aggiungi twitter:card.', null, 'low');
 
-          // --- 8. LINK SECURITY & QUALITY ---
-          const brokenLinks = links.filter(l => l.status === 'broken');
-          const suspiciousLinks = links.filter(l => l.status === 'warning');
-          const insecureExternalLinks = links.filter(l => l.type === 'external' && l.target === '_blank' && !l.rel.includes('noopener'));
-          
-          addCheck('Sicurezza', insecureExternalLinks.length === 0, 'Link Esterni Sicuri', `${insecureExternalLinks.length} Link Insicuri`, 'I link che si aprono in una nuova scheda senza rel="noopener" possono essere un rischio per la sicurezza e le prestazioni.', 'Aggiungi l\'attributo rel="noopener" (e idealmente noreferrer) a tutti i link esterni con target="_blank".');
-          addCheck('Qualità Link', brokenLinks.length === 0, 'Nessun Link Rotto', `${brokenLinks.length} Link Rotti Rilevati`, 'I link senza destinazione (href vuoto) peggiorano l\'esperienza utente.', 'Rimuovi i tag <a> vuoti o specifica un URL di destinazione valido.', 'fail');
-          addCheck('Qualità Link', suspiciousLinks.length === 0, 'Integrità Link OK', `${suspiciousLinks.length} Link Sospetti/Placeholder`, 'Link che puntano a "#", "javascript:" o localhost non dovrebbero essere presenti in produzione.', 'Sostituisci i placeholder con URL reali o usa tag <button> per funzionalità JavaScript.', 'warning');
+          // Accessibility
+          addCheck('Accessibilità', !!lang, 'Lingua Dichiarata', 'Lingua Non Dichiarata', 'Essenziale per gli screen reader.', 'Aggiungi lang al tag <html>.', null, 'high');
+          addCheck('Accessibilità', hasAriaLandmarks, 'Landmark Semantici OK', 'Landmark Mancanti', 'I landmark migliorano la navigazione assistiva.', 'Usa <main>, <nav>, <header>, <footer>.', null, 'medium');
 
-          const passed = checklist.filter(c => c.status === 'pass').length;
-          const score = Math.round((passed / checklist.length) * 100);
+          // Security / Link Quality
+          const insecure = links.filter(l => l.type === 'external' && l.target === '_blank' && !l.rel.includes('noopener'));
+          const broken   = links.filter(l => l.status === 'broken');
+          const suspect  = links.filter(l => l.status === 'warning');
+          const httpLinks = links.filter(l => l.href.startsWith('http://'));
 
-          let strategic = {
-            issue: score > 85 ? "Sito Altamente Ottimizzato" : (score > 60 ? "Ottimizzazione Media" : "Criticità Strutturali"),
-            decision: score > 85 ? "Mantenimento & Authority Building" : "Revisione On-Page e EEAT",
-            severity: Math.round((100 - score) / 10),
-            action: score > 85 ? "Focus su backlink di qualità e aggiornamento contenuti." : "Sistema i tag mancanti e migliora i segnali di fiducia (EEAT)."
-          };
+          addCheck('Sicurezza', insecure.length === 0, 'Link Esterni Sicuri', insecure.length + ' link senza noopener', 'Rischio sicurezza con target="_blank".', 'Aggiungi rel="noopener noreferrer".', null, 'high');
+          addCheck('Sicurezza', httpLinks.length === 0, 'Nessun HTTP', httpLinks.length + ' link HTTP', 'HTTP non è criptato.', 'Converti in HTTPS.', httpLinks.length > 0 ? 'warning' : 'pass', 'medium');
+          addCheck('Link', broken.length === 0, 'Nessun Link Rotto', broken.length + ' link rotti', 'Danneggiano l\'esperienza utente.', 'Rimuovi o correggi i link vuoti.', null, 'high');
+          addCheck('Link', suspect.length === 0, 'Integrità Link OK', suspect.length + ' link sospetti', 'Placeholder non devono andare in produzione.', 'Sostituisci "#" e "javascript:" con URL reali.', suspect.length > 0 ? 'warning' : 'pass', 'medium');
+
+          /* --- scoring (weighted) --- */
+          const weights = { critical: 3, high: 2, medium: 1, low: 0.5 };
+          let totalW = 0, passedW = 0;
+          checklist.forEach(c => {
+            const w = weights[c.priority] || 1;
+            totalW += w;
+            if (c.status === 'pass') passedW += w;
+            else if (c.status === 'warning') passedW += w * 0.5;
+            else if (c.status === 'info') passedW += w * 0.75;
+          });
+          const score = totalW > 0 ? Math.round((passedW / totalW) * 100) : 0;
+
+          /* category scores */
+          const categoryScores = {};
+          const cats = [...new Set(checklist.map(c => c.category))];
+          cats.forEach(cat => {
+            const items = checklist.filter(c => c.category === cat);
+            const p = items.filter(c => c.status === 'pass').length;
+            const w = items.filter(c => c.status === 'warning').length;
+            categoryScores[cat] = items.length > 0 ? Math.round(((p + w * 0.5) / items.length) * 100) : 0;
+          });
+
+          const grade = score > 90 ? 'A+' : score > 80 ? 'A' : score > 70 ? 'B' : score > 60 ? 'C' : score > 50 ? 'D' : 'F';
 
           return {
             score,
-            strategic,
+            strategic: {
+              issue: score > 85 ? "Sito Altamente Ottimizzato" : score > 60 ? "Ottimizzazione Media" : "Criticità Strutturali",
+              decision: score > 85 ? "Mantenimento & Authority Building" : score > 60 ? "Revisione On-Page Mirata" : "Ristrutturazione SEO Completa",
+              severity: Math.round((100 - score) / 10),
+              action: score > 85 ? "Focus su backlink e aggiornamento contenuti." : score > 60 ? "Correggi i problemi critici, poi migliora EEAT." : "Risolvi subito tutti i problemi critici.",
+              grade,
+            },
             checklist,
-            counts: { words: wordCount, images: images.length, links: links.length, h1s: h1s.length, h2s: h2s.length, readability: gulpease },
-            meta: { title, description: metaDesc, cms: isWP ? (isElementor ? 'WordPress + Elementor' : 'WordPress') : 'HTML Custom', lang },
-            links: links.slice(0, 50),
-            headings: Array.from(doc.querySelectorAll('h1, h2, h3, h4')).map(h => ({ level: h.tagName[1], text: h.innerText.trim() }))
+            categoryScores,
+            counts: { words: wordCount, images: images.length, links: links.length, h1s: h1s.length, h2s: h2s.length, h3s: h3s.length, readability: gulpease, paragraphs, scripts: scripts.length, stylesheets: stylesheets.length, iframes: iframes.length },
+            meta: { title, description: metaDesc, cms: isWP ? (isElementor ? 'WordPress + Elementor' : 'WordPress') : 'HTML Custom', lang: lang || 'n/d', canonical, charset: charset || 'n/d' },
+            links: links.slice(0, 80),
+            headings: allH.map(h => ({ level: h.tagName[1], text: (h.textContent || '').trim() })),
+            ogTags, twitterTags, schemaTypes,
+            stats: { passed: checklist.filter(c => c.status === 'pass').length, warnings: checklist.filter(c => c.status === 'warning').length, failed: checklist.filter(c => c.status === 'fail').length, info: checklist.filter(c => c.status === 'info').length, total: checklist.length },
           };
-          } catch (error) {
-            console.error(error);
-            return { error: error.message };
-          }
-        };
+        } catch (error) {
+          console.error("Errore analisi:", error);
+          return { error: error.message || "Errore sconosciuto durante l'analisi." };
+        }
+      };
 
-        // ==========================================
-        // UI COMPONENTS
-        // ==========================================
+      /* ============================================
+         REUSABLE UI COMPONENTS
+         ============================================ */
 
-        /**
-         * Dashboard component showing global score and strategic insights.
-         * @param {Object} props.data - The audit result data.
-         */
-        const Dashboard = ({ data }) => {
-            const chartData = [
-                { name: 'Pass', value: data.checklist.filter(c => c.status === 'pass').length },
-                { name: 'Warn', value: data.checklist.filter(c => c.status === 'warning').length },
-                { name: 'Fail', value: data.checklist.filter(c => c.status === 'fail').length }
-            ];
-            const COLORS = ['#22c55e', '#f59e0b', '#ef4444'];
+      const ScoreRing = ({ score, size = 180 }) => {
+        const [val, setVal] = useState(0);
+        const sw = 10;
+        const r = (size - sw) / 2;
+        const c = r * 2 * Math.PI;
+        const offset = c - (val / 100) * c;
+        const color = score > 80 ? '#22c55e' : score > 60 ? '#f59e0b' : '#ef4444';
 
-            return (
-                <div className="space-y-10 animate-fade-in">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="bg-slate-900 border border-white/5 p-10 rounded-[3rem] shadow-2xl flex flex-col items-center">
-                            <div className="text-[10px] font-black uppercase text-slate-600 mb-6 tracking-widest text-center">Salute SEO Globale</div>
-                            <div className="w-full h-40 relative">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={chartData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                            {chartData.map((e, i) => <Cell key={i} fill={COLORS[i]} />)}
-                                        </Pie>
-                                        <RechartsTooltip 
-                                            contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                            itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="absolute inset-0 flex items-center justify-center text-4xl font-black italic">{data.score}%</div>
-                            </div>
-                        </div>
+        useEffect(() => {
+          let raf;
+          const start = Date.now();
+          const dur = 1400;
+          const tick = () => {
+            const p = Math.min((Date.now() - start) / dur, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            setVal(Math.round(score * eased));
+            if (p < 1) raf = requestAnimationFrame(tick);
+          };
+          raf = requestAnimationFrame(tick);
+          return () => cancelAnimationFrame(raf);
+        }, [score]);
 
-                        <div className="lg:col-span-2 bg-gradient-to-br from-indigo-900/20 to-slate-900 border border-indigo-500/20 rounded-[3rem] p-10 flex flex-col md:flex-row gap-10 items-center shadow-2xl">
-                            <div className="bg-indigo-600 p-8 rounded-[2.5rem] shadow-2xl shadow-indigo-600/40"><Icon name="brain" size={48} /></div>
-                            <div className="flex-1 space-y-3">
-                                <div className="text-indigo-400 text-xs font-black uppercase tracking-widest">Strategic Intelligence</div>
-                                <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">{data.strategic.issue}</h2>
-                                <p className="text-slate-400 text-lg leading-snug">Consiglio: <span className="text-white font-bold">{data.strategic.action}</span></p>
-                                <div className="pt-2">
-                                     <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                        Gravità: {data.strategic.severity}/10
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        return (
+          <div className="relative" style={{ width: size, height: size }}>
+            <svg width={size} height={size} className="transform -rotate-90">
+              <circle cx={size/2} cy={size/2} r={r} stroke="rgba(255,255,255,0.05)" strokeWidth={sw} fill="none" />
+              <circle cx={size/2} cy={size/2} r={r} stroke={color} strokeWidth={sw} fill="none"
+                strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(0.4,0,0.2,1)' }} />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-5xl font-black italic" style={{ color }}>{val}</span>
+              <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">/ 100</span>
+            </div>
+          </div>
+        );
+      };
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {[
-                            { l: 'Volume Testo', v: `${data.counts.words} parole`, i: 'file' },
-                            { l: 'Indice Gulpease', v: `${data.counts.readability}/100`, i: 'activity' },
-                            { l: 'Asset Multimediali', v: `${data.counts.images} immagini`, i: 'image' },
-                            { l: 'Tech Stack', v: data.meta.cms, i: 'shield' }
-                        ].map((s, idx) => (
-                            <div key={idx} className="bg-slate-900 border border-white/5 p-8 rounded-3xl group hover:border-indigo-500/30 transition-all shadow-lg">
-                                <div className="flex justify-between items-center mb-4 opacity-40 group-hover:opacity-100 transition-opacity">
-                                    <span className="text-[10px] font-black uppercase tracking-widest">{s.l}</span>
-                                    <Icon name={s.i} size={14}/>
-                                </div>
-                                <div className="text-2xl font-black text-white truncate">{s.v}</div>
-                            </div>
-                        ))}
-                    </div>
+      const ProgressBar = ({ value, max = 100, color = 'bg-indigo-500', label }) => {
+        const pct = Math.min(Math.round((value / max) * 100), 100);
+        return (
+          <div className="space-y-1.5">
+            {label && <div className="flex justify-between text-xs"><span className="text-slate-400">{label}</span><span className="text-slate-500 font-bold">{pct}%</span></div>}
+            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%`, transition: 'width 1s ease-out' }} />
+            </div>
+          </div>
+        );
+      };
 
-                    <div className="bg-white rounded-[3rem] p-12 shadow-2xl border border-slate-200">
-                        <div className="text-slate-400 text-[10px] mb-4 font-bold uppercase tracking-widest flex items-center gap-2">
-                            <Icon name="search" size={14} className="text-slate-300" /> Google Search Preview
-                        </div>
-                        <div className="space-y-1">
-                            <div className="text-slate-500 text-sm font-mono truncate">www.tuosito.it › pagina › {data.meta.lang}</div>
-                            <h3 className="text-[#1a0dab] text-3xl font-medium truncate mb-2 leading-tight">{data.meta.title || 'Manca il Tag Title!'}</h3>
-                            <p className="text-[#4d5156] text-xl leading-relaxed line-clamp-2 max-w-4xl">
-                                {data.meta.description || 'Attenzione: Meta Description assente. Google genererà uno snippet automatico che potrebbe non essere ottimale per il click-through rate.'}
-                            </p>
-                        </div>
-                    </div>
+      const StatCard = ({ icon, label, value, sub, color = 'text-white' }) => (
+        <div className="bg-slate-900 border border-white/5 p-5 rounded-2xl group hover:border-indigo-500/20 transition-all card-hover">
+          <div className="flex justify-between items-center mb-2 opacity-50 group-hover:opacity-100 transition-opacity">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{label}</span>
+            <Icon name={icon} size={13} className="text-slate-600"/>
+          </div>
+          <div className={`text-xl font-black ${color} truncate`}>{value}</div>
+          {sub && <div className="text-[10px] text-slate-600 mt-0.5">{sub}</div>}
+        </div>
+      );
+
+      const Accordion = ({ title, children, defaultOpen = false, icon, badge }) => {
+        const [open, setOpen] = useState(defaultOpen);
+        return (
+          <div className="bg-slate-900 border border-white/5 rounded-2xl transition-all">
+            <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-5 text-left hover:bg-white/[0.02] transition-colors">
+              <div className="flex items-center gap-3">
+                {icon && <Icon name={icon} size={16} className="text-indigo-500" />}
+                <span className="font-bold text-white text-sm">{title}</span>
+                {badge && <span className="bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded-full text-[9px] font-bold">{badge}</span>}
+              </div>
+              <Icon name={open ? 'chevronUp' : 'chevronDown'} size={14} className="text-slate-500" />
+            </button>
+            {open && <div className="px-5 pb-5 animate-slide-open border-t border-white/5">{children}</div>}
+          </div>
+        );
+      };
+
+      const Toast = ({ message, type = 'success', onClose }) => {
+        useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
+        const colors = { success: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400', error: 'bg-red-500/10 border-red-500/30 text-red-400', info: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' };
+        return (
+          <div className={`fixed bottom-6 right-6 z-[999] ${colors[type] || colors.info} border px-5 py-3 rounded-2xl shadow-2xl animate-fade-in flex items-center gap-3 backdrop-blur-xl`}>
+            <Icon name={type === 'success' ? 'check' : type === 'error' ? 'alert' : 'info'} size={16} />
+            <span className="font-bold text-sm">{message}</span>
+          </div>
+        );
+      };
+
+      /* ============================================
+         VIEWS
+         ============================================ */
+
+      const Dashboard = ({ data }) => {
+        const chartData = [
+          { name: 'Superati', value: data.stats.passed },
+          { name: 'Avvisi', value: data.stats.warnings },
+          { name: 'Falliti', value: data.stats.failed },
+        ].filter(d => d.value > 0);
+        if (data.stats.info > 0) chartData.push({ name: 'Info', value: data.stats.info });
+        const COLORS = ['#22c55e', '#f59e0b', '#ef4444', '#6366f1'];
+
+        const radarData = Object.entries(data.categoryScores).map(([k, v]) => ({
+          subject: k.length > 14 ? k.substring(0, 12) + '…' : k,
+          score: v,
+        }));
+
+        const gradeColor = data.strategic.grade.startsWith('A') ? 'text-emerald-400' : data.strategic.grade === 'B' ? 'text-amber-400' : 'text-red-400';
+
+        return (
+          <div className="space-y-8 animate-fade-in">
+            {/* Hero */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-4 bg-slate-900 border border-white/5 p-8 rounded-3xl shadow-2xl flex flex-col items-center justify-center">
+                <div className="text-[9px] font-black uppercase text-slate-600 mb-5 tracking-widest">Salute SEO</div>
+                <ScoreRing score={data.score} />
+                <div className="mt-5 flex items-center gap-3">
+                  <span className={`text-4xl font-black italic ${gradeColor}`}>{data.strategic.grade}</span>
+                  <div className="text-[10px] text-slate-500 leading-snug">
+                    <div>{data.stats.passed} superati</div>
+                    <div>{data.stats.failed} falliti</div>
+                    <div>{data.stats.warnings} avvisi</div>
+                  </div>
                 </div>
-            );
-        };
+              </div>
 
-        /**
-         * Checklist component showing detailed SEO checks.
-         * @param {Array} props.items - The list of check objects.
-         */
-        const Checklist = ({ items }) => {
-            const [statusFilter, setStatusFilter] = useState('all');
-            const [categoryFilter, setCategoryFilter] = useState('all');
-            
-            const categories = ['all', ...new Set(items.map(i => i.category))];
-            const filtered = items.filter(i => {
-                const matchStatus = statusFilter === 'all' || i.status === statusFilter;
-                const matchCategory = categoryFilter === 'all' || i.category === categoryFilter;
-                return matchStatus && matchCategory;
-            });
-
-            return (
-                <div className="space-y-10 animate-fade-in">
-                    <div className="flex flex-col gap-6 items-center">
-                        <div className="flex flex-wrap gap-3 justify-center">
-                            {[
-                                { id: 'all', label: 'Tutti i Risultati', color: 'bg-indigo-600' },
-                                { id: 'pass', label: 'Superati', color: 'bg-emerald-500' },
-                                { id: 'warning', label: 'Avvisi', color: 'bg-amber-500' },
-                                { id: 'fail', label: 'Falliti', color: 'bg-red-500' }
-                            ].map(s => (
-                                <button 
-                                    key={s.id} 
-                                    onClick={() => setStatusFilter(s.id)} 
-                                    className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl flex items-center gap-3 border ${statusFilter === s.id ? `${s.color} text-white border-transparent scale-105` : 'bg-slate-900 text-slate-500 border-white/5 hover:border-white/10'}`}
-                                >
-                                    <div className={`w-2 h-2 rounded-full ${statusFilter === s.id ? 'bg-white' : s.color}`}></div>
-                                    {s.label}
-                                </button>
-                            ))}
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2 justify-center py-4 border-t border-white/5 w-full max-w-2xl">
-                            {categories.map(c => (
-                                <button 
-                                    key={c} 
-                                    onClick={() => setCategoryFilter(c)} 
-                                    className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${categoryFilter === c ? 'bg-slate-700 text-white shadow-lg' : 'text-slate-600 hover:text-slate-400'}`}
-                                >
-                                    {c}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {filtered.map(item => (
-                            <div key={item.id} className="bg-slate-900 border border-white/5 p-8 rounded-[2.5rem] flex items-start gap-6 hover:border-white/10 transition-all shadow-xl group">
-                                <div className={`p-4 rounded-2xl shadow-inner flex-shrink-0 ${item.status === 'pass' ? 'bg-emerald-500/10 text-emerald-500' : (item.status === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500')}`}>
-                                    <Icon name={item.status === 'pass' ? 'check' : 'alert'} size={28}/>
-                                </div>
-                                <div className="space-y-2 flex-1">
-                                    <div className="flex items-center gap-3">
-                                        <h4 className="font-black uppercase italic text-xl text-white leading-tight">{item.label} <span className="text-xs opacity-50">[{item.status}]</span></h4>
-                                        <span className="text-[9px] bg-slate-950 px-2 py-0.5 rounded text-slate-600 uppercase font-black border border-white/5">{item.category}</span>
-                                    </div>
-                                    <p className="text-slate-500 text-lg leading-snug">{item.description}</p>
-                                    {item.recommendation && (
-                                        <div className="mt-6 bg-slate-950 p-5 rounded-2xl border-l-4 border-indigo-600 shadow-inner">
-                                            <div className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-1">Azione Correttiva</div>
-                                            <div className="text-slate-300 text-sm font-medium">{item.recommendation}</div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+              <div className="lg:col-span-8 bg-gradient-to-br from-indigo-900/20 to-slate-900 border border-indigo-500/20 rounded-3xl p-8 flex flex-col md:flex-row gap-6 items-center shadow-2xl">
+                <div className="bg-indigo-600 p-6 rounded-2xl shadow-2xl shadow-indigo-600/30 pulse-glow flex-shrink-0">
+                  <Icon name="brain" size={40} />
                 </div>
-            );
+                <div className="flex-1 space-y-3">
+                  <div className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">Strategic Intelligence</div>
+                  <h2 className="text-2xl lg:text-3xl font-black italic uppercase tracking-tighter text-white leading-tight">{data.strategic.issue}</h2>
+                  <p className="text-slate-400 text-sm leading-relaxed"><span className="text-white font-bold">{data.strategic.decision}</span></p>
+                  <p className="text-slate-500 text-xs">{data.strategic.action}</p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">Gravità: {data.strategic.severity}/10</span>
+                    <span className="bg-slate-800 text-slate-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">{data.stats.total} check</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatCard icon="file" label="Parole" value={data.counts.words.toLocaleString()} sub={data.counts.paragraphs + ' paragrafi'} />
+              <StatCard icon="activity" label="Leggibilità" value={data.counts.readability + '/100'} color={data.counts.readability > 60 ? 'text-emerald-400' : 'text-amber-400'} />
+              <StatCard icon="image" label="Immagini" value={data.counts.images} sub={data.counts.h2s + ' H2'} />
+              <StatCard icon="link" label="Link" value={data.counts.links} sub={data.links.filter(l => l.type === 'external').length + ' esterni'} />
+              <StatCard icon="code" label="Script" value={data.counts.scripts} sub={data.counts.stylesheets + ' CSS'} />
+              <StatCard icon="shield" label="CMS" value={data.meta.cms} sub={'Lang: ' + data.meta.lang} />
+            </div>
+
+            {/* Category Breakdown + Pie */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-slate-900 border border-white/5 p-7 rounded-3xl shadow-xl">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-5 flex items-center gap-2"><Icon name="barChart" size={14} className="text-indigo-500"/> Punteggio per Categoria</h3>
+                <div className="space-y-3">
+                  {Object.entries(data.categoryScores).sort((a,b) => a[1] - b[1]).map(([cat, s]) => (
+                    <ProgressBar key={cat} label={cat} value={s} color={s > 80 ? 'bg-emerald-500' : s > 50 ? 'bg-amber-500' : 'bg-red-500'} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-white/5 p-7 rounded-3xl shadow-xl">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-5 flex items-center gap-2"><Icon name="pieChart" size={14} className="text-indigo-500"/> Distribuzione Risultati</h3>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={chartData} innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" animationBegin={200} animationDuration={1000}>
+                        {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      </Pie>
+                      <RechartsTooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', fontSize: '11px' }} itemStyle={{ color: '#fff' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-wrap justify-center gap-3 mt-3">
+                  {chartData.map((d, i) => (
+                    <div key={i} className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      {d.name}: <strong className="text-white">{d.value}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Radar */}
+            {radarData.length >= 3 && (
+              <div className="bg-slate-900 border border-white/5 p-7 rounded-3xl shadow-xl">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-5 flex items-center gap-2"><Icon name="target" size={14} className="text-indigo-500"/> Radar SEO</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarData} outerRadius="70%">
+                      <PolarGrid stroke="rgba(255,255,255,0.06)" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 700 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                      <Radar name="Score" dataKey="score" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} strokeWidth={2} animationDuration={1200} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Google Preview */}
+            <div className="bg-white rounded-3xl p-8 shadow-2xl border border-slate-200">
+              <div className="text-slate-400 text-[9px] mb-3 font-bold uppercase tracking-widest flex items-center gap-2">
+                <Icon name="search" size={12} className="text-slate-300" /> Google Search Preview
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-slate-500 text-xs font-mono truncate">www.tuosito.it › pagina</div>
+                <h3 className="text-[#1a0dab] text-xl font-medium truncate leading-tight">{data.meta.title || 'Tag Title mancante!'}</h3>
+                <p className="text-[#4d5156] text-sm leading-relaxed line-clamp-2 max-w-3xl">
+                  {data.meta.description || 'Meta description assente. Google genererà uno snippet automatico.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Accordions */}
+            <div className="space-y-3">
+              <Accordion title="Meta Tag Rilevati" icon="hash" badge={(Object.values(data.ogTags).filter(Boolean).length + Object.values(data.twitterTags).filter(Boolean).length) + ' tag'}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Open Graph</div>
+                    {Object.entries(data.ogTags).map(([k, v]) => (
+                      <div key={k} className="flex gap-2"><span className="text-slate-500 font-mono text-[10px]">og:{k}</span><span className={`${v ? 'text-emerald-400' : 'text-red-400/40'} text-[10px] truncate`}>{v || '—'}</span></div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Twitter/X</div>
+                    {Object.entries(data.twitterTags).map(([k, v]) => (
+                      <div key={k} className="flex gap-2"><span className="text-slate-500 font-mono text-[10px]">twitter:{k}</span><span className={`${v ? 'text-emerald-400' : 'text-red-400/40'} text-[10px] truncate`}>{v || '—'}</span></div>
+                    ))}
+                  </div>
+                </div>
+              </Accordion>
+
+              {data.schemaTypes.length > 0 && (
+                <Accordion title="Schema.org Rilevati" icon="code" badge={data.schemaTypes.length + ' tipi'}>
+                  <div className="flex flex-wrap gap-2">
+                    {data.schemaTypes.map((t, i) => (
+                      <span key={i} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-bold">{t}</span>
+                    ))}
+                  </div>
+                </Accordion>
+              )}
+
+              <Accordion title="Statistiche Tecniche" icon="settings">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  {[
+                    { l: 'H1', v: data.counts.h1s }, { l: 'H2', v: data.counts.h2s }, { l: 'H3', v: data.counts.h3s },
+                    { l: 'Immagini', v: data.counts.images }, { l: 'Link', v: data.counts.links }, { l: 'Script', v: data.counts.scripts },
+                    { l: 'CSS', v: data.counts.stylesheets }, { l: 'Iframe', v: data.counts.iframes }
+                  ].map((s, i) => (
+                    <div key={i} className="bg-slate-950 p-3 rounded-xl border border-white/5">
+                      <div className="text-[9px] text-slate-600 uppercase font-bold mb-0.5">{s.l}</div>
+                      <div className="text-lg font-black text-white">{s.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </Accordion>
+            </div>
+          </div>
+        );
+      };
+
+      /* --- CHECKLIST --- */
+      const ChecklistView = ({ items }) => {
+        const [statusF, setStatusF] = useState('all');
+        const [catF, setCatF] = useState('all');
+        const [sortBy, setSortBy] = useState('priority');
+        const [expanded, setExpanded] = useState(null);
+
+        const categories = ['all', ...new Set(items.map(i => i.category))];
+        const pOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+        const sOrder = { fail: 0, warning: 1, info: 2, pass: 3 };
+
+        const filtered = items.filter(i => {
+          return (statusF === 'all' || i.status === statusF) && (catF === 'all' || i.category === catF);
+        }).sort((a, b) => {
+          if (sortBy === 'priority') return (pOrder[a.priority] ?? 2) - (pOrder[b.priority] ?? 2);
+          return (sOrder[a.status] ?? 2) - (sOrder[b.status] ?? 2);
+        });
+
+        const counts = { all: items.length, pass: items.filter(i => i.status === 'pass').length, warning: items.filter(i => i.status === 'warning').length, fail: items.filter(i => i.status === 'fail').length };
+        const pColors = { critical: 'text-red-400 bg-red-500/10', high: 'text-orange-400 bg-orange-500/10', medium: 'text-amber-400 bg-amber-500/10', low: 'text-slate-400 bg-slate-500/10' };
+
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2 justify-center">
+                {[
+                  { id: 'all', l: 'Tutti (' + counts.all + ')', c: 'bg-indigo-600' },
+                  { id: 'pass', l: 'Superati (' + counts.pass + ')', c: 'bg-emerald-500' },
+                  { id: 'warning', l: 'Avvisi (' + counts.warning + ')', c: 'bg-amber-500' },
+                  { id: 'fail', l: 'Falliti (' + counts.fail + ')', c: 'bg-red-500' },
+                ].map(s => (
+                  <button key={s.id} onClick={() => setStatusF(s.id)}
+                    className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${statusF === s.id ? s.c + ' text-white border-transparent' : 'bg-slate-900 text-slate-500 border-white/5 hover:border-white/10'}`}>
+                    <div className={`w-2 h-2 rounded-full ${statusF === s.id ? 'bg-white' : s.c}`} />
+                    {s.l}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 justify-center max-w-3xl mx-auto py-2 border-t border-white/5">
+                {categories.map(c => (
+                  <button key={c} onClick={() => setCatF(c)}
+                    className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${catF === c ? 'bg-slate-700 text-white' : 'text-slate-600 hover:text-slate-400'}`}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex justify-center gap-2">
+                <span className="text-[9px] text-slate-600 uppercase tracking-widest self-center mr-1">Ordina:</span>
+                {['priority', 'status'].map(s => (
+                  <button key={s} onClick={() => setSortBy(s)} className={`px-3 py-1 rounded text-[9px] font-bold uppercase ${sortBy === s ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-400'}`}>
+                    {s === 'priority' ? 'Priorità' : 'Stato'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-center text-[10px] text-slate-600">{filtered.length} risultati</div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filtered.map(item => (
+                <div key={item.id}
+                  className={`bg-slate-900 border p-5 rounded-2xl flex flex-col gap-3 transition-all card-hover cursor-pointer ${expanded === item.id ? 'border-indigo-500/30 ring-1 ring-indigo-500/10' : 'border-white/5 hover:border-white/10'}`}
+                  onClick={() => setExpanded(expanded === item.id ? null : item.id)}>
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2.5 rounded-xl flex-shrink-0 ${item.status === 'pass' ? 'bg-emerald-500/10 text-emerald-500' : item.status === 'warning' ? 'bg-amber-500/10 text-amber-500' : item.status === 'info' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-red-500/10 text-red-500'}`}>
+                      <Icon name={item.status === 'pass' ? 'check' : item.status === 'info' ? 'info' : 'alert'} size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h4 className="font-bold text-sm text-white leading-tight">{item.label}</h4>
+                        <span className={`text-[7px] px-1.5 py-0.5 rounded font-black uppercase ${pColors[item.priority] || pColors.medium}`}>{item.priority}</span>
+                      </div>
+                      <span className="text-[8px] bg-slate-950 px-2 py-0.5 rounded text-slate-600 uppercase font-black border border-white/5">{item.category}</span>
+                    </div>
+                    <Icon name={expanded === item.id ? 'chevronUp' : 'chevronDown'} size={13} className="text-slate-600 flex-shrink-0 mt-0.5" />
+                  </div>
+
+                  {expanded === item.id && (
+                    <div className="animate-slide-open space-y-3 border-t border-white/5">
+                      <p className="text-slate-400 text-xs leading-relaxed">{item.description}</p>
+                      {item.recommendation && (
+                        <div className="bg-slate-950 p-4 rounded-xl border-l-4 border-indigo-600">
+                          <div className="text-indigo-400 text-[9px] font-black uppercase tracking-widest mb-1">Azione Correttiva</div>
+                          <div className="text-slate-300 text-xs leading-relaxed">{item.recommendation}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      /* --- HEADINGS --- */
+      const HeadingsView = ({ headings }) => {
+        const levelColors = {
+          '1': 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/20',
+          '2': 'bg-violet-600/50 text-violet-200 border-violet-400/30',
+          '3': 'bg-slate-800 text-slate-300 border-slate-600',
+          '4': 'bg-slate-900 text-slate-400 border-slate-700',
+          '5': 'bg-slate-950 text-slate-500 border-slate-800',
+          '6': 'bg-slate-950 text-slate-600 border-slate-800',
+        };
+        const bgColors = {
+          '1': 'bg-indigo-600/10 border-indigo-500/20',
+          '2': 'bg-violet-600/5 border-violet-500/10',
         };
 
-        const App = () => {
-            const [input, setInput] = useState('');
-            const [result, setResult] = useState(null);
-            const [view, setView] = useState('dashboard');
-            const [isDragging, setIsDragging] = useState(false);
+        return (
+          <div className="bg-slate-900 border border-white/5 rounded-3xl p-8 lg:p-12 max-w-5xl mx-auto space-y-8 shadow-2xl relative overflow-hidden animate-fade-in">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-30" />
+            <div className="flex justify-between items-center flex-wrap gap-3">
+              <h3 className="text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3"><Icon name="layers" size={24} className="text-indigo-500" /> Architettura Heading</h3>
+              <span className="bg-slate-950 px-3 py-1.5 rounded-full text-[9px] font-black uppercase text-slate-500 border border-white/5">{headings.length} tag</span>
+            </div>
 
-            const handleAudit = () => { 
-                if(input.trim()) {
-                    const res = analyzeHTML(input);
-                    if (res.error) {
-                        alert(res.error);
-                    } else {
-                        setResult(res);
-                    }
-                }
-            };
-            const readFile = (f) => {
-                const r = new FileReader();
-                r.onload = (ev) => {
-                    setInput(ev.target.result);
-                    setResult(analyzeHTML(ev.target.result));
-                };
-                r.readAsText(f);
-            };
-            const onDrop = (e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if(f) readFile(f); };
-
-            const copyToClipboard = () => {
-                const text = `SEO AUDIT REPORT\nScore: ${result.score}%\n\nSTRATEGIC INSIGHT:\n${result.strategic.issue}\n${result.strategic.action}\n\nCHECKLIST:\n` + 
-                    result.checklist.map(c => `[${c.status.toUpperCase()}] ${c.label}: ${c.description}${c.recommendation ? ' -> REC: ' + c.recommendation : ''}`).join('\n');
-                navigator.clipboard.writeText(text).then(() => alert('Report copiato negli appunti!'));
-            };
-
-            if (!result) {
-                return (
-                    <div className="min-h-screen flex items-center justify-center p-6 animate-fade-in" onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={onDrop}>
-                        <div className="max-w-4xl w-full space-y-12">
-                            <div className="text-center space-y-6">
-                                <div className="inline-block p-6 bg-indigo-600 rounded-[3rem] shadow-2xl shadow-indigo-600/30 mb-2 animate-pulse"><Icon name="shield" size={56} /></div>
-                                <h1 className="text-7xl font-black tracking-tighter uppercase italic text-white leading-none">SEO <span className="text-indigo-500">AUDIT</span> PRO</h1>
-                                <p className="text-slate-400 text-2xl font-medium">Trascina un file HTML o incolla il codice sorgente.</p>
-                            </div>
-                            <div className={`relative border-2 border-dashed rounded-[4rem] p-4 transition-all duration-500 ${isDragging ? 'border-indigo-500 bg-indigo-500/5' : 'border-white/10 bg-slate-900/50'}`}>
-                                <textarea className="w-full h-96 bg-transparent rounded-[3rem] p-12 font-mono text-sm outline-none text-slate-300 placeholder:text-slate-700 resize-none shadow-inner" placeholder="<!DOCTYPE html>..." value={input} onChange={e => setInput(e.target.value)} />
-                                <div className="absolute bottom-10 right-10 left-10 flex gap-4">
-                                    <button onClick={() => document.getElementById('f-in').click()} className="flex-1 bg-slate-800 hover:bg-slate-700 py-6 rounded-[1.5rem] font-black uppercase text-[11px] tracking-widest transition-all">Carica File</button>
-                                    <button onClick={handleAudit} disabled={!input.trim()} className="flex-[2] bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 py-6 rounded-[1.5rem] font-black uppercase tracking-[0.4em] text-white shadow-2xl transition-all flex items-center justify-center gap-3">
-                                        <Icon name="zap" size={18}/> Esegui Audit Totale
-                                    </button>
-                                    <input id="f-in" type="file" className="hidden" accept=".html" onChange={e => { const f = e.target.files[0]; if(f) readFile(f); }} />
-                                </div>
-                            </div>
-                        </div>
+            {headings.length === 0 ? (
+              <div className="text-center py-12 text-slate-600">
+                <Icon name="alert" size={40} className="mx-auto mb-3 opacity-20" />
+                <p className="font-bold">Nessun heading rilevato</p>
+              </div>
+            ) : (
+              <div className="space-y-2 relative">
+                <div className="absolute left-5 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-500/40 via-slate-800 to-transparent" />
+                {headings.map((h, i) => (
+                  <div key={i} className="flex items-start gap-3 group" style={{ paddingLeft: (parseInt(h.level, 10) - 1) * 18 + 'px' }}>
+                    <div className="relative mt-1.5">
+                      <div className="w-6 h-px bg-slate-800 absolute -left-3 top-1/2" />
+                      <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-[9px] font-black border ${levelColors[h.level] || levelColors['4']}`}>H{h.level}</span>
                     </div>
-                );
+                    <div className={`flex-1 p-3 rounded-xl border ${bgColors[h.level] || 'bg-slate-950/50 border-white/5 group-hover:border-white/10'} transition-all`}>
+                      <span className={`${h.level === '1' ? 'text-white font-black text-base' : h.level === '2' ? 'text-slate-200 font-bold text-sm' : 'text-slate-400 text-xs'} leading-tight block`}>
+                        {h.text || '[Vuoto]'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      /* --- LINKS --- */
+      const LinksView = ({ links }) => {
+        const [typeF, setTypeF] = useState('all');
+        const [statusF, setStatusF] = useState('all');
+
+        const filtered = links.filter(l => {
+          return (typeF === 'all' || l.type === typeF) && (statusF === 'all' || l.status === statusF);
+        });
+
+        const stats = {
+          total: links.length,
+          internal: links.filter(l => l.type === 'internal').length,
+          external: links.filter(l => l.type === 'external').length,
+          ok: links.filter(l => l.status === 'ok').length,
+          warning: links.filter(l => l.status === 'warning').length,
+          broken: links.filter(l => l.status === 'broken').length,
+        };
+
+        return (
+          <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+              {[
+                { l: 'Totali', v: stats.total, c: 'text-white' },
+                { l: 'Interni', v: stats.internal, c: 'text-blue-400' },
+                { l: 'Esterni', v: stats.external, c: 'text-indigo-400' },
+                { l: 'Validi', v: stats.ok, c: 'text-emerald-400' },
+                { l: 'Avvisi', v: stats.warning, c: 'text-amber-400' },
+                { l: 'Rotti', v: stats.broken, c: 'text-red-400' },
+              ].map((s, i) => (
+                <div key={i} className="bg-slate-900 border border-white/5 p-3 rounded-xl text-center">
+                  <div className="text-[8px] text-slate-600 uppercase font-bold tracking-widest mb-0.5">{s.l}</div>
+                  <div className={`text-xl font-black ${s.c}`}>{s.v}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex gap-1 bg-slate-900 p-1 rounded-xl border border-white/5">
+                {[{ id: 'all', l: 'Tutti' }, { id: 'internal', l: 'Interni' }, { id: 'external', l: 'Esterni' }].map(f => (
+                  <button key={f.id} onClick={() => setTypeF(f.id)} className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase ${typeF === f.id ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}>{f.l}</button>
+                ))}
+              </div>
+              <div className="flex gap-1 bg-slate-900 p-1 rounded-xl border border-white/5">
+                {[{ id: 'all', l: 'Tutti' }, { id: 'ok', l: 'Validi' }, { id: 'warning', l: 'Avvisi' }, { id: 'broken', l: 'Rotti' }].map(f => (
+                  <button key={f.id} onClick={() => setStatusF(f.id)} className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase ${statusF === f.id ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}>{f.l}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 shadow-2xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-400 border-separate" style={{ borderSpacing: '0 6px' }}>
+                  <thead>
+                    <tr className="text-[9px] font-black uppercase text-slate-600 tracking-widest">
+                      <th className="px-3 pb-2 w-8">#</th>
+                      <th className="px-3 pb-2">Testo</th>
+                      <th className="px-3 pb-2">Destinazione</th>
+                      <th className="px-3 pb-2">Stato</th>
+                      <th className="px-3 pb-2 text-right">Tipo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((l, i) => (
+                      <tr key={i} className="bg-slate-950/50 hover:bg-white/5 transition-colors group">
+                        <td className="p-3 rounded-l-xl border-y border-l border-white/5 text-slate-700 text-[10px] font-mono">{i + 1}</td>
+                        <td className="p-3 border-y border-white/5 font-bold text-slate-200 text-xs truncate" style={{ maxWidth: '180px' }}>{l.text}</td>
+                        <td className="p-3 border-y border-white/5 font-mono text-[10px] opacity-40 group-hover:opacity-100 transition-opacity truncate" style={{ maxWidth: '250px' }}>{l.href}</td>
+                        <td className="p-3 border-y border-white/5">
+                          <span className={`flex items-center gap-1.5 text-[9px] font-bold uppercase ${l.status === 'broken' ? 'text-red-500' : l.status === 'warning' ? 'text-amber-500' : 'text-emerald-500'}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${l.status === 'broken' ? 'bg-red-500' : l.status === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                            {l.statusLabel}
+                          </span>
+                        </td>
+                        <td className="p-3 rounded-r-xl text-right border-y border-r border-white/5">
+                          <span className={`px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${l.type === 'external' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>{l.type === 'external' ? 'ext' : 'int'}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {filtered.length === 0 && (
+                <div className="text-center py-10 text-slate-600">
+                  <Icon name="link" size={32} className="mx-auto mb-2 opacity-20" />
+                  <p className="font-bold text-sm">Nessun link corrisponde ai filtri</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      /* ============================================
+         MAIN APP
+         ============================================ */
+      const App = () => {
+        const [input, setInput] = useState('');
+        const [result, setResult] = useState(null);
+        const [view, setView] = useState('dashboard');
+        const [isDragging, setIsDragging] = useState(false);
+        const [toast, setToast] = useState(null);
+        const [analyzing, setAnalyzing] = useState(false);
+        const dragCounter = useRef(0);
+
+        const showToast = useCallback((message, type) => { setToast({ message, type, key: Date.now() }); }, []);
+
+        const runAudit = useCallback((html) => {
+          if (!html || !html.trim()) return;
+          setAnalyzing(true);
+          // use setTimeout to allow UI to update before heavy computation
+          setTimeout(() => {
+            try {
+              const res = analyzeHTML(html);
+              if (res.error) {
+                showToast(res.error, 'error');
+              } else {
+                setResult(res);
+                setView('dashboard');
+              }
+            } catch (e) {
+              showToast('Errore imprevisto: ' + e.message, 'error');
             }
+            setAnalyzing(false);
+          }, 100);
+        }, [showToast]);
 
-            return (
-                <div className="min-h-screen pb-20 animate-fade-in">
-                    <header className="border-b border-white/5 bg-slate-900/50 p-8 sticky top-0 z-50 backdrop-blur-xl">
-                        <div className="container mx-auto flex justify-between items-center max-w-7xl">
-                            <div className="flex items-center gap-4"><Icon name="activity" className="text-indigo-500" size={28}/><span className="font-black italic text-2xl tracking-tighter uppercase leading-none">SEO <span className="text-indigo-500 underline decoration-2 underline-offset-4">PRO</span></span></div>
-                            <div className="flex gap-4 no-print">
-                                <button onClick={() => window.print()} className="text-[10px] font-black uppercase tracking-widest text-slate-400 border border-white/10 px-8 py-4 rounded-full flex items-center gap-3 bg-slate-900 transition-all hover:text-white"><Icon name="print" size={14}/> Stampa PDF</button>
-                                <button onClick={copyToClipboard} className="text-[10px] font-black uppercase tracking-widest text-indigo-400 border border-indigo-500/20 px-8 py-4 rounded-full flex items-center gap-3 bg-indigo-500/5 transition-all hover:bg-indigo-500/10"><Icon name="copy" size={14}/> Copia Report</button>
-                                <button onClick={() => setResult(null)} className="text-[10px] font-black uppercase tracking-widest text-slate-500 border border-white/10 px-8 py-4 rounded-full flex items-center gap-3 bg-slate-900 transition-all hover:text-white"><Icon name="reset" size={14}/> Nuovo Test</button>
-                            </div>
-                        </div>
-                    </header>
-                    <main className="container mx-auto px-6 py-16 max-w-7xl">
-                        <div className="flex flex-wrap gap-3 mb-16 bg-slate-900/50 p-2 rounded-[2rem] border border-white/5 w-fit mx-auto shadow-2xl no-print">
-                            {[
-                                { id: 'dashboard', l: 'Overview', i: 'globe' },
-                                { id: 'checklist', l: 'Audit Checklist', i: 'list' },
-                                { id: 'struttura', l: 'Architettura Tag', i: 'layers' },
-                                { id: 'links', l: 'Analisi Link', i: 'link' }
-                            ].map(t => <button key={t.id} onClick={() => setView(t.id)} className={`px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${view === t.id ? 'bg-indigo-600 text-white shadow-2xl scale-105' : 'text-slate-500 hover:text-white hover:bg-slate-800'}`}>
-                                <Icon name={t.i} size={14}/> {t.l}
-                            </button>)}
-                        </div>
-                        {view === 'dashboard' && <Dashboard data={result} />}
-                        {view === 'checklist' && <Checklist items={result.checklist} />}
-                        {view === 'struttura' && (
-                            <div className="bg-slate-900 border border-white/5 rounded-[4rem] p-16 max-w-5xl mx-auto space-y-12 shadow-2xl relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-1.5 bg-indigo-500/30"></div>
-                                <div className="flex justify-between items-center">
-                                    <h3 className="text-4xl font-black italic uppercase tracking-tighter flex items-center gap-6"><Icon name="layers" size={32} className="text-indigo-500" /> Semantica Heading</h3>
-                                    <span className="bg-slate-950 px-4 py-2 rounded-full text-[10px] font-black uppercase text-slate-500 border border-white/5">{result.headings.length} Tag Rilevati</span>
-                                </div>
-                                <div className="space-y-4 relative">
-                                    <div className="absolute left-6 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-500/50 via-slate-800 to-transparent"></div>
-                                    {result.headings.map((h, i) => (
-                                        <div key={i} className={`flex items-start gap-4 transition-all group`} style={{ paddingLeft: `${(h.level - 1) * 24}px` }}>
-                                            <div className="relative mt-3">
-                                                <div className="w-12 h-px bg-slate-800 absolute -left-6 top-1/2"></div>
-                                                <span className={`w-10 h-10 flex items-center justify-center rounded-xl text-[10px] font-black border transition-all ${h.level === '1' ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/20' : 'bg-slate-950 text-slate-500 border-white/5 group-hover:border-slate-700'}`}>H{h.level}</span>
-                                            </div>
-                                            <div className={`flex-1 p-5 rounded-2xl transition-all ${h.level === '1' ? 'bg-indigo-600/10 border border-indigo-500/20' : 'bg-slate-950/50 border border-white/5 group-hover:border-white/10'}`}>
-                                                <span className={`${h.level === '1' ? 'text-white font-black text-xl' : 'text-slate-300 font-bold text-base'} leading-tight block`}>{h.text}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {view === 'links' && (
-                            <div className="bg-slate-900 border border-white/5 rounded-[4rem] p-12 shadow-2xl animate-fade-in max-w-6xl mx-auto">
-                                <h3 className="text-3xl font-black italic uppercase mb-10 flex items-center gap-4"><Icon name="link" className="text-indigo-500" size={32} /> Analisi Link (Top 50)</h3>
-                                <div className="overflow-x-auto px-4">
-                                    <table className="w-full text-left text-sm text-slate-400 border-separate border-spacing-y-3">
-                                        <thead><tr className="text-[11px] font-black uppercase text-slate-600 tracking-widest"><th className="px-6 pb-4">Testo</th><th className="px-6 pb-4">Destinazione</th><th className="px-6 pb-4">Stato</th><th className="px-6 pb-4 text-right">Tipo</th></tr></thead>
-                                        <tbody>
-                                            {result.links.map((l, i) => (
-                                                <tr key={i} className="bg-slate-950/50 hover:bg-white/5 transition-colors group">
-                                                    <td className="p-6 rounded-l-[1.5rem] font-bold text-slate-200 border-y border-l border-white/5">{l.text}</td>
-                                                    <td className="p-6 border-y border-white/5 font-mono text-xs opacity-40 group-hover:opacity-100 transition-opacity truncate max-w-xs">{l.href}</td>
-                                                    <td className="p-6 border-y border-white/5">
-                                                        <span className={`flex items-center gap-2 text-[10px] font-bold uppercase ${l.status === 'broken' ? 'text-red-500' : (l.status === 'warning' ? 'text-amber-500' : 'text-emerald-500')}`}>
-                                                            <div className={`w-1.5 h-1.5 rounded-full ${l.status === 'broken' ? 'bg-red-500' : (l.status === 'warning' ? 'bg-amber-500' : 'bg-emerald-500')}`}></div>
-                                                            {l.statusLabel}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-6 rounded-r-[1.5rem] text-right border-y border-r border-white/5">
-                                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${l.type === 'external' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>{l.type}</span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </main>
+        const handleAudit = useCallback(() => { runAudit(input); }, [input, runAudit]);
+
+        const readFile = useCallback((f) => {
+          if (!f) return;
+          const reader = new FileReader();
+          reader.onerror = () => showToast('Errore nella lettura del file.', 'error');
+          reader.onload = (ev) => {
+            const content = ev.target.result;
+            setInput(content);
+            runAudit(content);
+          };
+          reader.readAsText(f);
+        }, [runAudit, showToast]);
+
+        const handleDragEnter = useCallback((e) => { e.preventDefault(); dragCounter.current++; setIsDragging(true); }, []);
+        const handleDragLeave = useCallback((e) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current <= 0) { dragCounter.current = 0; setIsDragging(false); } }, []);
+        const handleDragOver = useCallback((e) => { e.preventDefault(); }, []);
+        const handleDrop = useCallback((e) => {
+          e.preventDefault(); dragCounter.current = 0; setIsDragging(false);
+          const f = e.dataTransfer?.files?.[0];
+          if (f && /\.(html?|htm)$/i.test(f.name)) { readFile(f); }
+          else { showToast('File non supportato. Usa .html o .htm', 'error'); }
+        }, [readFile, showToast]);
+
+        const copyToClipboard = useCallback(() => {
+          if (!result) return;
+          const sep = '═'.repeat(50);
+          const lines = [
+            sep,
+            '  SEO AUDIT PRO - REPORT',
+            sep,
+            '',
+            'SCORE: ' + result.score + '% (' + result.strategic.grade + ')',
+            'INSIGHT: ' + result.strategic.issue,
+            'AZIONE: ' + result.strategic.action,
+            '',
+            '─'.repeat(50),
+            '  CHECKLIST (' + result.stats.total + ' check)',
+            '─'.repeat(50),
+            '',
+            ...result.checklist.map(c => {
+              const icon = c.status === 'pass' ? '✅' : c.status === 'warning' ? '⚠️' : c.status === 'info' ? 'ℹ️' : '❌';
+              return icon + ' [' + c.priority.toUpperCase() + '] ' + c.label + '\n   ' + c.description + (c.recommendation ? '\n   → ' + c.recommendation : '');
+            }),
+          ];
+          navigator.clipboard.writeText(lines.join('\n'))
+            .then(() => showToast('Report copiato!', 'success'))
+            .catch(() => showToast('Errore nella copia.', 'error'));
+        }, [result, showToast]);
+
+        const exportJSON = useCallback(() => {
+          if (!result) return;
+          try {
+            const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'seo-audit-' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('JSON esportato!', 'success');
+          } catch (e) {
+            showToast('Errore nell\'esportazione.', 'error');
+          }
+        }, [result, showToast]);
+
+        // Ctrl+Enter shortcut
+        useEffect(() => {
+          const handler = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleAudit(); }
+          };
+          window.addEventListener('keydown', handler);
+          return () => window.removeEventListener('keydown', handler);
+        }, [handleAudit]);
+
+        /* --------- LANDING --------- */
+        if (!result) {
+          return (
+            <div className="min-h-screen flex items-center justify-center p-4 md:p-6 animate-fade-in"
+              onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop}>
+              <div className="max-w-3xl w-full space-y-8">
+                <div className="text-center space-y-5">
+                  <div className="inline-block p-5 bg-indigo-600 rounded-3xl shadow-2xl shadow-indigo-600/30 pulse-glow">
+                    <Icon name="shield" size={48} />
+                  </div>
+                  <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic text-white leading-none">
+                    SEO <span className="text-indigo-500">AUDIT</span> PRO
+                  </h1>
+                  <p className="text-slate-400 text-lg max-w-lg mx-auto">
+                    Analisi SEO completa con 40+ controlli. Trascina un file HTML o incolla il codice sorgente.
+                  </p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {['Tecnico', 'On-Page', 'EEAT', 'AI', 'Accessibilità', 'Performance'].map(t => (
+                      <span key={t} className="bg-slate-900 border border-white/5 px-3 py-1 rounded-full text-[9px] text-slate-500 uppercase font-bold tracking-widest">{t}</span>
+                    ))}
+                  </div>
                 </div>
-            );
-        };
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+                <div className={`relative border-2 border-dashed rounded-3xl p-3 transition-all duration-300 ${isDragging ? 'border-indigo-500 bg-indigo-500/5 scale-[1.01]' : 'border-white/10 bg-slate-900/50'}`}>
+                  {isDragging && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-indigo-500/5 rounded-3xl z-10 backdrop-blur-sm pointer-events-none">
+                      <div className="text-center">
+                        <Icon name="download" size={40} className="mx-auto text-indigo-500 mb-2" />
+                        <p className="text-indigo-400 font-bold">Rilascia il file qui</p>
+                      </div>
+                    </div>
+                  )}
+                  <textarea
+                    className="w-full h-72 bg-transparent rounded-2xl p-8 font-mono text-sm outline-none text-slate-300 placeholder:text-slate-700 resize-none"
+                    placeholder={'<!DOCTYPE html>\n<html lang="it">\n<head>\n  <title>...</title>\n  <meta name="description" content="...">\n</head>\n<body>\n  <h1>...</h1>\n</body>\n</html>'}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    spellCheck={false}
+                  />
+                  <div className="flex gap-2 p-3 pt-0">
+                    <button onClick={() => document.getElementById('file-input').click()}
+                      className="flex-1 bg-slate-800 hover:bg-slate-700 py-4 rounded-xl font-black uppercase text-[9px] tracking-widest transition-all flex items-center justify-center gap-2 border border-white/5">
+                      <Icon name="download" size={13} /> Carica File
+                    </button>
+                    <button onClick={handleAudit} disabled={!input.trim() || analyzing}
+                      className="flex-[2] bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed py-4 rounded-xl font-black uppercase tracking-[0.2em] text-white shadow-2xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-2">
+                      {analyzing ? (
+                        <React.Fragment>
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25" />
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Analisi...
+                        </React.Fragment>
+                      ) : (
+                        <React.Fragment><Icon name="zap" size={14} /> Esegui Audit</React.Fragment>
+                      )}
+                    </button>
+                    <input id="file-input" type="file" className="hidden" accept=".html,.htm"
+                      onChange={e => { const f = e.target?.files?.[0]; if (f) readFile(f); e.target.value = ''; }} />
+                  </div>
+                </div>
+                <p className="text-center text-[9px] text-slate-700 uppercase tracking-widest">Ctrl + Enter per avviare • Drag & Drop supportato</p>
+              </div>
+              {toast && <Toast key={toast.key} message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+            </div>
+          );
+        }
+
+        /* --------- RESULTS --------- */
+        const navItems = [
+          { id: 'dashboard', l: 'Overview', i: 'globe' },
+          { id: 'checklist', l: 'Checklist', i: 'list' },
+          { id: 'struttura', l: 'Heading', i: 'layers' },
+          { id: 'links', l: 'Link', i: 'link' },
+        ];
+
+        return (
+          <div className="min-h-screen pb-16 animate-fade-in">
+            <header className="border-b border-white/5 bg-slate-950/80 px-4 py-3 md:py-4 sticky top-0 z-50 backdrop-blur-xl">
+              <div className="container mx-auto flex flex-wrap justify-between items-center max-w-7xl gap-3">
+                <div className="flex items-center gap-3">
+                  <Icon name="activity" className="text-indigo-500" size={22} />
+                  <span className="font-black italic text-lg tracking-tighter uppercase">SEO <span className="text-indigo-500">PRO</span></span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black ${result.score > 80 ? 'bg-emerald-500/10 text-emerald-400' : result.score > 60 ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'}`}>
+                    {result.score}% {result.strategic.grade}
+                  </span>
+                </div>
+                <div className="flex gap-1.5 no-print flex-wrap">
+                  <button onClick={() => window.print()} className="text-[8px] font-black uppercase tracking-widest text-slate-400 border border-white/10 px-3 py-2 rounded-lg flex items-center gap-1.5 bg-slate-900 hover:text-white hover:border-white/20 transition-all">
+                    <Icon name="print" size={11} /> Stampa
+                  </button>
+                  <button onClick={exportJSON} className="text-[8px] font-black uppercase tracking-widest text-slate-400 border border-white/10 px-3 py-2 rounded-lg flex items-center gap-1.5 bg-slate-900 hover:text-white hover:border-white/20 transition-all">
+                    <Icon name="download" size={11} /> JSON
+                  </button>
+                  <button onClick={copyToClipboard} className="text-[8px] font-black uppercase tracking-widest text-indigo-400 border border-indigo-500/20 px-3 py-2 rounded-lg flex items-center gap-1.5 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all">
+                    <Icon name="copy" size={11} /> Copia
+                  </button>
+                  <button onClick={() => { setResult(null); setInput(''); }} className="text-[8px] font-black uppercase tracking-widest text-slate-500 border border-white/10 px-3 py-2 rounded-lg flex items-center gap-1.5 bg-slate-900 hover:text-white hover:border-white/20 transition-all">
+                    <Icon name="reset" size={11} /> Nuovo
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            <main className="container mx-auto px-4 md:px-6 py-8 max-w-7xl">
+              <div className="flex flex-wrap gap-1.5 mb-10 bg-slate-900/50 p-1.5 rounded-xl border border-white/5 w-fit mx-auto shadow-lg no-print">
+                {navItems.map(t => (
+                  <button key={t.id} onClick={() => setView(t.id)}
+                    className={`px-5 md:px-7 py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${view === t.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-white hover:bg-slate-800'}`}>
+                    <Icon name={t.i} size={13} />
+                    <span className="hidden sm:inline">{t.l}</span>
+                  </button>
+                ))}
+              </div>
+
+              {view === 'dashboard' && <Dashboard data={result} />}
+              {view === 'checklist' && <ChecklistView items={result.checklist} />}
+              {view === 'struttura' && <HeadingsView headings={result.headings} />}
+              {view === 'links' && <LinksView links={result.links} />}
+            </main>
+
+            <footer className="border-t border-white/5 py-4 text-center no-print">
+              <p className="text-[9px] text-slate-700 uppercase tracking-widest">SEO Audit Pro • {result.stats.total} check • Score: {result.score}% ({result.strategic.grade})</p>
+            </footer>
+
+            {toast && <Toast key={toast.key} message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+          </div>
+        );
+      };
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
